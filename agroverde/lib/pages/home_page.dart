@@ -1,3 +1,4 @@
+import 'package:agroverde/routes.dart';
 import 'package:flutter/material.dart';
 
 class HomePage extends StatelessWidget {
@@ -20,10 +21,17 @@ class HomePage extends StatelessWidget {
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 const Spacer(),
-                TextButton(onPressed: () {}, child: const Text('Entrar')),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pushNamed(context, AppRoutes.login);
+                  },
+                  child: const Text('Entrar'),
+                ),
                 const SizedBox(width: 12),
                 ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.pushNamed(context, AppRoutes.cadastro);
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xff064e2f),
                     foregroundColor: Colors.white,

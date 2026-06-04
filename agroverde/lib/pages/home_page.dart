@@ -37,14 +37,15 @@ class _HomePageState extends State<HomePage> {
           'Acesse informações importantes da fazenda de forma simples.',
     ),
   ];
-
+  // O carrossel funciona exibindo apenas parte da lista.
+  //logica
   late final Timer _carouselTimer;
 
   @override
   void initState() {
     super.initState();
 
-    _carouselTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+    _carouselTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       setState(() {
         _startIndex = (_startIndex + 1) % _carouselItems.length;
       });
@@ -66,6 +67,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isMobile = MediaQuery.of(context).size.width < 700;
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       body: SingleChildScrollView(
@@ -119,27 +121,71 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
                       const Spacer(),
-                      TextButton(
+
+                      ElevatedButton(
                         onPressed: () {
                           Navigator.pushNamed(context, AppRoutes.login);
                         },
-                        child: const Text('Acesse'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryGreen,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isMobile ? 12 : 20,
+                            vertical: isMobile ? 10 : 14,
+                          ),
+                          textStyle: TextStyle(
+                            fontSize: isMobile ? 12 : 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        child: const Text('Entrar'),
+                      ),
+
+                      const SizedBox(width: 8),
+
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.pushNamed(context, AppRoutes.cadastro);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xff8B6F47),
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isMobile ? 12 : 20,
+                            vertical: isMobile ? 10 : 14,
+                          ),
+                          textStyle: TextStyle(
+                            fontSize: isMobile ? 12 : 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        child: Text(isMobile ? 'Criar' : 'Criar Conta'),
                       ),
                     ],
                   ),
 
                   const SizedBox(height: 110),
-
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 14,
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: AppTheme.accentColor,
+                      color: const Color.fromARGB(255, 220, 191, 136),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Text('🌱 Gestão completa do agronegócio'),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.agriculture,
+                          size: 30,
+                          color: AppTheme.primaryGreen,
+                        ),
+                        SizedBox(width: 6),
+                        Text('Gestão completa do agronegócio'),
+                      ],
+                    ),
                   ),
 
                   const SizedBox(height: 28),
@@ -187,43 +233,54 @@ class _HomePageState extends State<HomePage> {
                     },
                   ),
 
-                  const SizedBox(height: 70),
+                  const SizedBox(height: 150),
 
-                  const Row(
-                    children: [
-                      Expanded(
-                        child: _FeatureCard(
-                          icon: Icons.grass,
-                          title: 'Talhões e Safras',
-                          description:
-                              'Controle de áreas, plantios e colheitas',
-                        ),
-                      ),
-                      SizedBox(width: 20),
-                      Expanded(
-                        child: _FeatureCard(
-                          icon: Icons.inventory_2_outlined,
-                          title: 'Estoque',
-                          description: 'Sementes, fertilizantes e defensivos',
-                        ),
-                      ),
-                      SizedBox(width: 20),
-                      Expanded(
-                        child: _FeatureCard(
-                          icon: Icons.pets,
-                          title: 'Rebanho',
-                          description: 'Animais, pesagens e manejo',
-                        ),
-                      ),
-                      SizedBox(width: 20),
-                      Expanded(
-                        child: _FeatureCard(
-                          icon: Icons.account_balance_wallet_outlined,
-                          title: 'Financeiro',
-                          description: 'Receitas, despesas e fluxo de caixa',
-                        ),
-                      ),
-                    ],
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      return Wrap(
+                        spacing: 20,
+                        runSpacing: 20,
+                        alignment: WrapAlignment.center,
+                        children: const [
+                          SizedBox(
+                            width: 260,
+                            child: _FeatureCard(
+                              icon: Icons.grass,
+                              title: 'Talhões e Safras',
+                              description:
+                                  'Controle de áreas, plantios e colheitas',
+                            ),
+                          ),
+                          SizedBox(
+                            width: 260,
+                            child: _FeatureCard(
+                              icon: Icons.inventory_2_outlined,
+                              title: 'Estoque',
+                              description:
+                                  'Sementes, fertilizantes e defensivos',
+                            ),
+                          ),
+                          SizedBox(
+                            height: 190, //para ele ficar na mesma altura
+                            width: 260,
+                            child: _FeatureCard(
+                              icon: Icons.pets,
+                              title: 'Rebanho',
+                              description: 'Animais, pesagens e manejo',
+                            ),
+                          ),
+                          SizedBox(
+                            width: 260,
+                            child: _FeatureCard(
+                              icon: Icons.account_balance_wallet_outlined,
+                              title: 'Financeiro',
+                              description:
+                                  'Receitas, despesas e fluxo de caixa',
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ],
               ),
@@ -304,7 +361,7 @@ class _CarouselCard extends StatelessWidget {
       duration: const Duration(milliseconds: 450),
       child: Container(
         key: ValueKey(imagePath),
-        height: 200,
+        height: 220,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
           image: DecorationImage(

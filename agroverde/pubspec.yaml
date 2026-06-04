@@ -1,5 +1,5 @@
 name: agroverde
-description: "A new Flutter project."
+description: "description: Sistema de gestão rural"
 publish_to: 'none'
 version: 0.1.0+1
 
@@ -17,3 +17,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+   - assets/images/
+   - assets/icons/
+   - assets/logos/

@@ -21,6 +21,8 @@ class AppTheme {
     // Estilo padrão dos campos de entrada
     inputDecorationTheme: const InputDecorationTheme(
       border: OutlineInputBorder(),
+      prefixIconColor: primaryGreen,
+      suffixIconColor: primaryGreen,
     ),
   );
 }

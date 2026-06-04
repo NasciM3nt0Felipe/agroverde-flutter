@@ -4,10 +4,19 @@ import 'package:flutter/material.dart';
 /// Centraliza cores, estilos e configurações visuais
 /// para evitar repetições nas telas.
 class AppTheme {
+  // Cores oficiais do projeto AgroVerde
+  static const Color primaryGreen = Color(0xFF064E2F);
+  static const Color backgroundColor = Color(0xFFF7F8F5);
+  static const Color accentColor = Color(0xFFECE6D4);
+
   static ThemeData lightTheme = ThemeData(
     useMaterial3: true,
-    // Cor principal do AgroVerde (VERDE)
-    colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF2E7D32)),
+
+    // Cor principal do AgroVerde
+    colorScheme: ColorScheme.fromSeed(seedColor: primaryGreen),
+
+    // Fundo padrão do app
+    scaffoldBackgroundColor: backgroundColor,
 
     // Estilo padrão dos campos de entrada
     inputDecorationTheme: const InputDecorationTheme(

@@ -103,8 +103,8 @@ class _LoginPageState extends State<LoginPage> {
                           suffixIcon: IconButton(
                             icon: Icon(
                               _obscurePassword
-                                  ? Icons.visibility
-                                  : Icons.visibility_off,
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
                             ),
                             onPressed: () {
                               setState(() {
@@ -150,10 +150,21 @@ class _LoginPageState extends State<LoginPage> {
 
                       SizedBox(
                         width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: () {},
-                          icon: const Icon(Icons.login),
-                          label: const Text('Entrar com Google'),
+                        child: OutlinedButton(
+                          onPressed: () {
+                            print('Login com Google');
+                          },
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Image.asset(
+                                'assets/icons/google.png',
+                                height: 28,
+                              ),
+                              const SizedBox(width: 10),
+                              const Text('Entrar com Google'),
+                            ],
+                          ),
                         ),
                       ),
 

@@ -325,6 +325,8 @@ class _HomePageState extends State<HomePage> {
                           );
                         },
                       ),
+                      const SizedBox(height: 80),
+                      const _HomeFooter(),
                     ],
                   ),
                 ),
@@ -469,6 +471,25 @@ class _CarouselCard extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeFooter extends StatelessWidget {
+  const _HomeFooter();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 30),
+      child: const Center(
+        child: Text(
+          '© 2026 AgroVerde. Todos os direitos reservados.',
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          textAlign: TextAlign.center,
         ),
       ),
     );

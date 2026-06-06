@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:agroverde/routes.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -173,7 +174,9 @@ class _LoginPageState extends State<LoginPage> {
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton.icon(
-                          onPressed: () {},
+                          onPressed: () {
+                            Navigator.pushNamed(context, AppRoutes.cadastro);
+                          },
                           icon: const Icon(Icons.person_add),
                           label: const Text('Crie sua conta'),
                         ),

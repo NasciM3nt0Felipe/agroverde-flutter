@@ -1,5 +1,6 @@
 import '../data/sqlite/usuario_repository.dart';
 import '../domain/services/usuario_service.dart';
+import '../domain/services/sessao_service.dart';
 
 import 'package:flutter/material.dart';
 import 'package:agroverde/routes.dart';
@@ -61,6 +62,8 @@ class _LoginPageState extends State<LoginPage> {
       });
       return;
     }
+
+    SessaoService.definirUsuario(usuario);
 
     if (!mounted) return;
 

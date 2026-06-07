@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:agroverde/routes.dart';
+
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
 
@@ -19,10 +21,8 @@ class DashboardPage extends StatelessWidget {
           constraints: const BoxConstraints(maxWidth: 1200),
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
-
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-
               children: [
                 const Text(
                   'Olá, Felipe! 👋',
@@ -41,26 +41,22 @@ class DashboardPage extends StatelessWidget {
                 Wrap(
                   spacing: 16,
                   runSpacing: 16,
-
                   children: const [
                     _DashboardCard(
                       titulo: 'Talhões',
                       valor: '0',
                       icone: Icons.agriculture,
                     ),
-
                     _DashboardCard(
                       titulo: 'Safras',
                       valor: '0',
                       icone: Icons.grass,
                     ),
-
                     _DashboardCard(
                       titulo: 'Animais',
                       valor: '0',
                       icone: Icons.pets,
                     ),
-
                     _DashboardCard(
                       titulo: 'Saldo',
                       valor: 'R\$ 0,00',
@@ -81,23 +77,19 @@ class DashboardPage extends StatelessWidget {
                 Wrap(
                   spacing: 16,
                   runSpacing: 16,
-
                   children: const [
                     _QuickAccessCard(
                       titulo: 'Talhões e Safras',
                       subtitulo: 'Gerencie áreas e culturas',
                     ),
-
                     _QuickAccessCard(
                       titulo: 'Estoque',
                       subtitulo: 'Controle de insumos',
                     ),
-
                     _QuickAccessCard(
                       titulo: 'Rebanho',
                       subtitulo: 'Gestão animal',
                     ),
-
                     _QuickAccessCard(
                       titulo: 'Financeiro',
                       subtitulo: 'Receitas e despesas',
@@ -129,21 +121,15 @@ class _DashboardCard extends StatelessWidget {
     return SizedBox(
       width: 220,
       height: 150,
-
       child: Card(
         elevation: 4,
-
         child: Padding(
           padding: const EdgeInsets.all(16),
-
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-
             children: [
               Icon(icone, color: const Color(0xFF064E2F), size: 32),
-
               const SizedBox(height: 8),
-
               Text(
                 valor,
                 style: const TextStyle(
@@ -151,7 +137,6 @@ class _DashboardCard extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-
               Text(titulo),
             ],
           ),
@@ -171,14 +156,11 @@ class _QuickAccessCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: 300,
-
       child: Card(
         child: ListTile(
           leading: const Icon(Icons.eco, color: Color(0xFF064E2F)),
-
           title: Text(titulo),
           subtitle: Text(subtitulo),
-
           trailing: const Icon(Icons.arrow_forward_ios),
         ),
       ),
@@ -193,17 +175,14 @@ class _AppDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Drawer(
       child: ListView(
-        children: const [
-          DrawerHeader(
+        children: [
+          const DrawerHeader(
             decoration: BoxDecoration(color: Color(0xFF064E2F)),
-
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Icon(Icons.eco, size: 48, color: Colors.white),
-
                 SizedBox(height: 8),
-
                 Text(
                   'AgroVerde',
                   style: TextStyle(
@@ -212,28 +191,42 @@ class _AppDrawer extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-
                 Text('Gestão Rural', style: TextStyle(color: Colors.white70)),
               ],
             ),
           ),
 
-          ListTile(leading: Icon(Icons.dashboard), title: Text('Dashboard')),
-
-          ListTile(leading: Icon(Icons.person), title: Text('Perfil')),
-
-          ListTile(leading: Icon(Icons.home_work), title: Text('Propriedades')),
+          const ListTile(
+            leading: Icon(Icons.dashboard),
+            title: Text('Dashboard'),
+          ),
 
           ListTile(
+            leading: const Icon(Icons.person),
+            title: const Text('Perfil'),
+            onTap: () {
+              Navigator.pushNamed(context, AppRoutes.perfil);
+            },
+          ),
+
+          const ListTile(
+            leading: Icon(Icons.home_work),
+            title: Text('Propriedades'),
+          ),
+
+          const ListTile(
             leading: Icon(Icons.agriculture),
             title: Text('Talhões e Safras'),
           ),
 
-          ListTile(leading: Icon(Icons.inventory), title: Text('Estoque')),
+          const ListTile(
+            leading: Icon(Icons.inventory),
+            title: Text('Estoque'),
+          ),
 
-          ListTile(leading: Icon(Icons.pets), title: Text('Rebanho')),
+          const ListTile(leading: Icon(Icons.pets), title: Text('Rebanho')),
 
-          ListTile(
+          const ListTile(
             leading: Icon(Icons.attach_money),
             title: Text('Financeiro'),
           ),

@@ -1,3 +1,6 @@
+import '../repositories/usuario_repository.dart';
+import '../services/usuario_service.dart';
+
 import 'package:flutter/material.dart';
 import 'package:agroverde/routes.dart';
 
@@ -10,6 +13,59 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   bool _obscurePassword = true; // Variável para mostrar/ocultar senha
+
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _senhaController = TextEditingController();
+
+  final UsuarioRepository _usuarioRepository = UsuarioRepository();
+  final UsuarioService _usuarioService = UsuarioService();
+
+  String? _erroLogin;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _senhaController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _realizarLogin() async {
+    setState(() {
+      _erroLogin = null;
+    });
+
+    final email = _emailController.text;
+    final senha = _senhaController.text;
+
+    if (email.isEmpty || senha.isEmpty) {
+      setState(() {
+        _erroLogin = 'Informe e-mail e senha.';
+      });
+      return;
+    }
+
+    final usuario = await _usuarioRepository.buscarPorEmail(email);
+
+    if (usuario == null) {
+      setState(() {
+        _erroLogin = 'E-mail ou senha inválidos.';
+      });
+      return;
+    }
+
+    final senhaHash = _usuarioService.gerarHashSenha(senha);
+
+    if (senhaHash != usuario.senha) {
+      setState(() {
+        _erroLogin = 'E-mail ou senha inválidos.';
+      });
+      return;
+    }
+
+    if (!mounted) return;
+
+    Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -86,6 +142,7 @@ class _LoginPageState extends State<LoginPage> {
                       const SizedBox(height: 24),
 
                       TextField(
+                        controller: _emailController,
                         decoration: const InputDecoration(
                           labelText: 'E-mail',
                           border: OutlineInputBorder(),
@@ -96,6 +153,7 @@ class _LoginPageState extends State<LoginPage> {
                       const SizedBox(height: 16),
 
                       TextField(
+                        controller: _senhaController,
                         obscureText: _obscurePassword,
                         decoration: InputDecoration(
                           labelText: 'Senha',
@@ -116,6 +174,18 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
 
+                      if (_erroLogin != null) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          _erroLogin!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.red,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+
                       const SizedBox(height: 24),
 
                       SizedBox(
@@ -126,7 +196,7 @@ class _LoginPageState extends State<LoginPage> {
                             padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
 
-                          onPressed: () {},
+                          onPressed: _realizarLogin,
                           child: const Text(
                             'Entrar',
                             style: TextStyle(color: Colors.white),

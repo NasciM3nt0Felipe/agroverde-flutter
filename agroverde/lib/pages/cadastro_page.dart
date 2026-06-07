@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../models/usuario.dart';
-import '../repositories/usuario_repository.dart';
-import '../services/usuario_service.dart';
+import '../domain/entities/usuario.dart';
+import '../data/sqlite/usuario_repository.dart';
+import '../domain/services/usuario_service.dart';
 import '../routes.dart';
 
 class CadastroPage extends StatefulWidget {

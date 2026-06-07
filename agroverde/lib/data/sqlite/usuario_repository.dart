@@ -1,5 +1,5 @@
-import '../database/database_helper.dart';
-import '../models/usuario.dart';
+import 'database_helper.dart';
+import '../../domain/entities/usuario.dart';
 
 class UsuarioRepository {
   Future<int> inserir(Usuario usuario) async {

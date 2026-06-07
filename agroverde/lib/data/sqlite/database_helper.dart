@@ -21,12 +21,20 @@ class DatabaseHelper {
 
   static Future<void> _onCreate(Database db, int version) async {
     await db.execute('''
-      CREATE TABLE usuario (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        nome TEXT NOT NULL,
-        email TEXT NOT NULL,
-        senha TEXT NOT NULL
-      )
-    ''');
+    CREATE TABLE perfil_usuario (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      usuario_id INTEGER NOT NULL,
+      cpf TEXT,
+      telefone TEXT,
+      cep TEXT,
+      rua TEXT,
+      numero TEXT,
+      bairro TEXT,
+      cidade TEXT,
+      estado TEXT,
+
+      FOREIGN KEY(usuario_id) REFERENCES usuario(id)
+    )
+  ''');
   }
 }

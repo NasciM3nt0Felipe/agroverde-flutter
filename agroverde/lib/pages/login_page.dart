@@ -1,5 +1,5 @@
-import '../repositories/usuario_repository.dart';
-import '../services/usuario_service.dart';
+import '../data/sqlite/usuario_repository.dart';
+import '../domain/services/usuario_service.dart';
 
 import 'package:flutter/material.dart';
 import 'package:agroverde/routes.dart';

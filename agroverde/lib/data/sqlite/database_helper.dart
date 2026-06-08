@@ -46,5 +46,19 @@ class DatabaseHelper {
       FOREIGN KEY(usuario_id) REFERENCES usuario(id)
     )
   ''');
+
+    await db.execute('''
+  CREATE TABLE propriedade (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    usuario_id INTEGER NOT NULL,
+    nome TEXT NOT NULL,
+    area_total REAL NOT NULL,
+    cidade TEXT,
+    estado TEXT,
+    descricao TEXT,
+
+    FOREIGN KEY(usuario_id) REFERENCES usuario(id)
+  )
+''');
   }
 }

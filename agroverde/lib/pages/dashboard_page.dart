@@ -209,9 +209,12 @@ class _AppDrawer extends StatelessWidget {
             },
           ),
 
-          const ListTile(
-            leading: Icon(Icons.home_work),
-            title: Text('Propriedades'),
+          ListTile(
+            leading: const Icon(Icons.home_work),
+            title: const Text('Propriedades'),
+            onTap: () {
+              Navigator.pushNamed(context, AppRoutes.propriedades);
+            },
           ),
 
           const ListTile(

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import 'package:agroverde/routes.dart';
 
 class DashboardPage extends StatelessWidget {
@@ -9,94 +8,101 @@ class DashboardPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       drawer: const _AppDrawer(),
-
       appBar: AppBar(
         title: const Text('AgroVerde'),
         backgroundColor: const Color(0xFF064E2F),
         foregroundColor: Colors.white,
       ),
-
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1200),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Olá, Felipe! 👋',
-                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-                ),
-
-                const SizedBox(height: 8),
-
-                const Text(
-                  'Aqui está o resumo da sua propriedade.',
-                  style: TextStyle(fontSize: 16, color: Colors.grey),
-                ),
-
-                const SizedBox(height: 24),
-
-                Wrap(
-                  spacing: 16,
-                  runSpacing: 16,
-                  children: const [
-                    _DashboardCard(
-                      titulo: 'Talhões',
-                      valor: '0',
-                      icone: Icons.agriculture,
+      body: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/images/Backg-teste.png'),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: Container(
+          color: Colors.white.withOpacity(0.88),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1200),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Olá, Felipe! 👋',
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                    _DashboardCard(
-                      titulo: 'Safras',
-                      valor: '0',
-                      icone: Icons.grass,
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Aqui está o resumo da sua propriedade.',
+                      style: TextStyle(fontSize: 16, color: Colors.grey),
                     ),
-                    _DashboardCard(
-                      titulo: 'Animais',
-                      valor: '0',
-                      icone: Icons.pets,
+                    const SizedBox(height: 24),
+                    Wrap(
+                      spacing: 16,
+                      runSpacing: 16,
+                      children: const [
+                        _DashboardCard(
+                          titulo: 'Talhões',
+                          valor: '0',
+                          icone: Icons.agriculture,
+                        ),
+                        _DashboardCard(
+                          titulo: 'Safras',
+                          valor: '0',
+                          icone: Icons.grass,
+                        ),
+                        _DashboardCard(
+                          titulo: 'Animais',
+                          valor: '0',
+                          icone: Icons.pets,
+                        ),
+                        _DashboardCard(
+                          titulo: 'Saldo',
+                          valor: 'R\$ 0,00',
+                          icone: Icons.attach_money,
+                        ),
+                      ],
                     ),
-                    _DashboardCard(
-                      titulo: 'Saldo',
-                      valor: 'R\$ 0,00',
-                      icone: Icons.attach_money,
+                    const SizedBox(height: 32),
+                    const Text(
+                      'Acesso rápido',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Wrap(
+                      spacing: 16,
+                      runSpacing: 16,
+                      children: const [
+                        _QuickAccessCard(
+                          titulo: 'Talhões e Safras',
+                          subtitulo: 'Gerencie áreas e culturas',
+                        ),
+                        _QuickAccessCard(
+                          titulo: 'Estoque',
+                          subtitulo: 'Controle de insumos',
+                        ),
+                        _QuickAccessCard(
+                          titulo: 'Rebanho',
+                          subtitulo: 'Gestão animal',
+                        ),
+                        _QuickAccessCard(
+                          titulo: 'Financeiro',
+                          subtitulo: 'Receitas e despesas',
+                        ),
+                      ],
                     ),
                   ],
                 ),
-
-                const SizedBox(height: 32),
-
-                const Text(
-                  'Acesso rápido',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                ),
-
-                const SizedBox(height: 16),
-
-                Wrap(
-                  spacing: 16,
-                  runSpacing: 16,
-                  children: const [
-                    _QuickAccessCard(
-                      titulo: 'Talhões e Safras',
-                      subtitulo: 'Gerencie áreas e culturas',
-                    ),
-                    _QuickAccessCard(
-                      titulo: 'Estoque',
-                      subtitulo: 'Controle de insumos',
-                    ),
-                    _QuickAccessCard(
-                      titulo: 'Rebanho',
-                      subtitulo: 'Gestão animal',
-                    ),
-                    _QuickAccessCard(
-                      titulo: 'Financeiro',
-                      subtitulo: 'Receitas e despesas',
-                    ),
-                  ],
-                ),
-              ],
+              ),
             ),
           ),
         ),
@@ -129,7 +135,6 @@ class _DashboardCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               Icon(icone, color: const Color(0xFF064E2F), size: 32),
-              const SizedBox(height: 8),
               Text(
                 valor,
                 style: const TextStyle(
@@ -217,9 +222,12 @@ class _AppDrawer extends StatelessWidget {
             },
           ),
 
-          const ListTile(
-            leading: Icon(Icons.agriculture),
-            title: Text('Talhões e Safras'),
+          ListTile(
+            leading: const Icon(Icons.agriculture),
+            title: const Text('Talhões e Safras'),
+            onTap: () {
+              Navigator.pushNamed(context, AppRoutes.talhoesSafras);
+            },
           ),
 
           const ListTile(

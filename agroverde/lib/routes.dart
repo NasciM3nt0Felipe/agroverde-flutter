@@ -7,6 +7,7 @@ import 'pages/dashboard_page.dart';
 import 'pages/pessoa_page.dart';
 import 'pages/propriedade_page.dart';
 import 'pages/talhoes_safras_page.dart';
+import 'pages/estoque_page.dart';
 
 class AppRoutes {
   static const String home = '/';
@@ -16,6 +17,7 @@ class AppRoutes {
   static const String perfil = '/perfil';
   static const String propriedades = '/propriedades';
   static const String talhoesSafras = '/talhoes-safras';
+  static const String estoque = '/estoque';
 
   static Map<String, WidgetBuilder> routes = {
     home: (context) => const HomePage(),
@@ -25,5 +27,6 @@ class AppRoutes {
     perfil: (context) => const PessoaPage(),
     propriedades: (context) => const PropriedadePage(),
     talhoesSafras: (context) => const TalhoesSafrasPage(),
+    estoque: (context) => const EstoquePage(),
   };
 }

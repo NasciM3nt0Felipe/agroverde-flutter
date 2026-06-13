@@ -230,11 +230,13 @@ class _AppDrawer extends StatelessWidget {
             },
           ),
 
-          const ListTile(
-            leading: Icon(Icons.inventory),
-            title: Text('Estoque'),
+          ListTile(
+            leading: const Icon(Icons.inventory),
+            title: const Text('Estoque'),
+            onTap: () {
+              Navigator.pushNamed(context, AppRoutes.estoque);
+            },
           ),
-
           const ListTile(leading: Icon(Icons.pets), title: Text('Rebanho')),
 
           const ListTile(

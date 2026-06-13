@@ -96,5 +96,22 @@ class DatabaseHelper {
         FOREIGN KEY(talhao_id) REFERENCES talhao(id)
       )
     ''');
+    await db.execute('''
+  CREATE TABLE estoque_item (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    propriedade_id INTEGER NOT NULL,
+    nome TEXT NOT NULL,
+    categoria TEXT NOT NULL,
+    quantidade_inicial REAL NOT NULL,
+    quantidade_atual REAL NOT NULL,
+    unidade_medida TEXT NOT NULL,
+    preco_medio_unitario REAL NOT NULL,
+    estoque_minimo REAL NOT NULL,
+    fornecedor TEXT,
+    observacao TEXT,
+
+    FOREIGN KEY(propriedade_id) REFERENCES propriedade(id)
+  )
+''');
   }
 }

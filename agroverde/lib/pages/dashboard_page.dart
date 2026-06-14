@@ -7,8 +7,6 @@ class DashboardPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final nomeUsuario = SessaoService.usuarioLogado?.nome ?? 'Usuário';
-    final primeiroNome = nomeUsuario.split(' ').first;
     final nomePropriedade = SessaoService.propriedadeSelecionada?.nome;
 
     return Scaffold(
@@ -36,14 +34,21 @@ class DashboardPage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Olá, $primeiroNome! 👋',
+                      '🌾 ${nomePropriedade ?? "Nenhuma propriedade selecionada"}',
                       style: const TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
 
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 4),
+
+                    const Text(
+                      'Painel de gestão da propriedade.',
+                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                    ),
+
+                    const SizedBox(height: 16),
 
                     Container(
                       padding: const EdgeInsets.all(16),
@@ -62,23 +67,16 @@ class DashboardPage extends StatelessWidget {
                           ),
                           const SizedBox(width: 12),
                           Expanded(
-                            child: nomePropriedade == null
-                                ? const Text(
-                                    'Ficaremos felizes em acompanhar seu desenvolvimento.',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  )
-                                : Text(
-                                    nomePropriedade,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
+                            child: Text(
+                              nomePropriedade == null
+                                  ? 'Ficaremos felizes em acompanhar seu desenvolvimento.'
+                                  : 'Você está gerenciando: $nomePropriedade',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -132,18 +130,22 @@ class DashboardPage extends StatelessWidget {
                         _QuickAccessCard(
                           titulo: 'Talhões e Safras',
                           subtitulo: 'Gerencie áreas e culturas',
+                          rota: AppRoutes.talhoesSafras,
                         ),
                         _QuickAccessCard(
                           titulo: 'Estoque',
                           subtitulo: 'Controle de insumos',
+                          rota: AppRoutes.estoque,
                         ),
                         _QuickAccessCard(
                           titulo: 'Rebanho',
                           subtitulo: 'Gestão animal',
+                          rota: AppRoutes.rebanho,
                         ),
                         _QuickAccessCard(
                           titulo: 'Financeiro',
                           subtitulo: 'Receitas e despesas',
+                          rota: AppRoutes.financeiro,
                         ),
                       ],
                     ),
@@ -201,8 +203,13 @@ class _DashboardCard extends StatelessWidget {
 class _QuickAccessCard extends StatelessWidget {
   final String titulo;
   final String subtitulo;
+  final String rota;
 
-  const _QuickAccessCard({required this.titulo, required this.subtitulo});
+  const _QuickAccessCard({
+    required this.titulo,
+    required this.subtitulo,
+    required this.rota,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -214,6 +221,9 @@ class _QuickAccessCard extends StatelessWidget {
           title: Text(titulo),
           subtitle: Text(subtitulo),
           trailing: const Icon(Icons.arrow_forward_ios),
+          onTap: () {
+            Navigator.pushNamed(context, rota);
+          },
         ),
       ),
     );
@@ -348,8 +358,14 @@ class _AppDrawer extends StatelessWidget {
                   (route) => false,
                 );
               },
-              icon: const Icon(Icons.logout, color: Colors.red),
-              label: const Text('Sair', style: TextStyle(color: Colors.red)),
+              icon: const Icon(
+                Icons.logout,
+                color: Color.fromARGB(255, 55, 50, 49),
+              ),
+              label: const Text(
+                'Sair',
+                style: TextStyle(color: Color.fromARGB(255, 52, 48, 47)),
+              ),
             ),
           ),
         ],

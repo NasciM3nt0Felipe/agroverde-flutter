@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/sqlite/propriedade_repository.dart';
 import '../domain/entities/propriedade.dart';
 import '../domain/services/sessao_service.dart';
+import '../routes.dart';
 
 class PropriedadePage extends StatefulWidget {
   const PropriedadePage({super.key});
@@ -115,11 +116,17 @@ class _PropriedadePageState extends State<PropriedadePage> {
   void _selecionarPropriedade(Propriedade propriedade) {
     SessaoService.definirPropriedade(propriedade);
 
-    setState(() {});
+    if (!mounted) return;
 
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text('Colhendo em: ${propriedade.nome}')));
+
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      AppRoutes.dashboard,
+      (route) => false,
+    );
   }
 
   void _abrirFormularioCadastro() {
@@ -353,13 +360,10 @@ class _PropriedadePageState extends State<PropriedadePage> {
                                       ? Colors.green
                                       : const Color(0xFF064E2F),
                                 ),
-
                                 title: Text(propriedade.nome),
-
                                 subtitle: Text(
                                   '${propriedade.cidade ?? ''} - ${propriedade.estado ?? ''}',
                                 ),
-
                                 trailing: Wrap(
                                   spacing: 8,
                                   children: [
@@ -371,9 +375,7 @@ class _PropriedadePageState extends State<PropriedadePage> {
                                         backgroundColor: selecionada
                                             ? Colors.green
                                             : const Color(0xff8B6F47),
-                                        foregroundColor: selecionada
-                                            ? Colors.white
-                                            : Colors.white,
+                                        foregroundColor: Colors.white,
                                       ),
                                       child: Text(
                                         selecionada ? 'Colhendo' : 'Cultivando',

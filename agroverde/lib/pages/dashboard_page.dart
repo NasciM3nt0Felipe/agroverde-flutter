@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:agroverde/routes.dart';
+import 'package:agroverde/domain/services/sessao_service.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final nomeUsuario = SessaoService.usuarioLogado?.nome ?? 'Usuário';
+    final primeiroNome = nomeUsuario.split(' ').first;
+    final nomePropriedade = SessaoService.propriedadeSelecionada?.nome;
+
     return Scaffold(
       drawer: const _AppDrawer(),
       appBar: AppBar(
@@ -30,19 +35,57 @@ class DashboardPage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Olá, Felipe! 👋',
-                      style: TextStyle(
+                    Text(
+                      'Olá, $primeiroNome! 👋',
+                      style: const TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Aqui está o resumo da sua propriedade.',
-                      style: TextStyle(fontSize: 16, color: Colors.grey),
+
+                    const SizedBox(height: 12),
+
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF064E2F),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            nomePropriedade == null
+                                ? Icons.eco
+                                : Icons.home_work,
+                            color: Colors.white,
+                            size: 32,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: nomePropriedade == null
+                                ? const Text(
+                                    'Ficaremos felizes em acompanhar seu desenvolvimento.',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  )
+                                : Text(
+                                    nomePropriedade,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                          ),
+                        ],
+                      ),
                     ),
+
                     const SizedBox(height: 24),
+
                     Wrap(
                       spacing: 16,
                       runSpacing: 16,
@@ -69,7 +112,9 @@ class DashboardPage extends StatelessWidget {
                         ),
                       ],
                     ),
+
                     const SizedBox(height: 32),
+
                     const Text(
                       'Acesso rápido',
                       style: TextStyle(
@@ -77,7 +122,9 @@ class DashboardPage extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+
                     const SizedBox(height: 16),
+
                     Wrap(
                       spacing: 16,
                       runSpacing: 16,
@@ -179,69 +226,131 @@ class _AppDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      child: ListView(
+      child: Column(
         children: [
-          const DrawerHeader(
-            decoration: BoxDecoration(color: Color(0xFF064E2F)),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(Icons.eco, size: 48, color: Colors.white),
-                SizedBox(height: 8),
-                Text(
-                  'AgroVerde',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
+          DrawerHeader(
+            decoration: const BoxDecoration(color: Color(0xFF064E2F)),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 80,
+                    height: 45,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: const [
+                        Positioned(
+                          left: 10,
+                          top: 4,
+                          child: Icon(Icons.eco, size: 42, color: Colors.black),
+                        ),
+                        Positioned(
+                          right: 10,
+                          bottom: 4,
+                          child: Icon(Icons.eco, size: 42, color: Colors.white),
+                        ),
+                      ],
+                    ),
                   ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'AgroVerde',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Text(
+                    'Gestão Rural',
+                    style: TextStyle(color: Colors.white70),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.home),
+                  title: const Text('Início'),
+                  onTap: () {
+                    Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      AppRoutes.home,
+                      (route) => false,
+                    );
+                  },
                 ),
-                Text('Gestão Rural', style: TextStyle(color: Colors.white70)),
+
+                ListTile(
+                  leading: const Icon(Icons.person),
+                  title: const Text('Perfil'),
+                  onTap: () {
+                    Navigator.pushNamed(context, AppRoutes.perfil);
+                  },
+                ),
+
+                ListTile(
+                  leading: const Icon(Icons.home_work),
+                  title: const Text('Propriedades'),
+                  onTap: () {
+                    Navigator.pushNamed(context, AppRoutes.propriedades);
+                  },
+                ),
+
+                ListTile(
+                  leading: const Icon(Icons.agriculture),
+                  title: const Text('Talhões e Safras'),
+                  onTap: () {
+                    Navigator.pushNamed(context, AppRoutes.talhoesSafras);
+                  },
+                ),
+
+                ListTile(
+                  leading: const Icon(Icons.inventory),
+                  title: const Text('Estoque'),
+                  onTap: () {
+                    Navigator.pushNamed(context, AppRoutes.estoque);
+                  },
+                ),
+
+                ListTile(
+                  leading: const Icon(Icons.pets),
+                  title: const Text('Rebanho'),
+                  onTap: () {
+                    Navigator.pushNamed(context, AppRoutes.rebanho);
+                  },
+                ),
+
+                ListTile(
+                  leading: const Icon(Icons.attach_money),
+                  title: const Text('Financeiro'),
+                  onTap: () {
+                    Navigator.pushNamed(context, AppRoutes.financeiro);
+                  },
+                ),
               ],
             ),
           ),
 
-          const ListTile(
-            leading: Icon(Icons.dashboard),
-            title: Text('Dashboard'),
-          ),
-
-          ListTile(
-            leading: const Icon(Icons.person),
-            title: const Text('Perfil'),
-            onTap: () {
-              Navigator.pushNamed(context, AppRoutes.perfil);
-            },
-          ),
-
-          ListTile(
-            leading: const Icon(Icons.home_work),
-            title: const Text('Propriedades'),
-            onTap: () {
-              Navigator.pushNamed(context, AppRoutes.propriedades);
-            },
-          ),
-
-          ListTile(
-            leading: const Icon(Icons.agriculture),
-            title: const Text('Talhões e Safras'),
-            onTap: () {
-              Navigator.pushNamed(context, AppRoutes.talhoesSafras);
-            },
-          ),
-
-          ListTile(
-            leading: const Icon(Icons.inventory),
-            title: const Text('Estoque'),
-            onTap: () {
-              Navigator.pushNamed(context, AppRoutes.estoque);
-            },
-          ),
-          const ListTile(leading: Icon(Icons.pets), title: Text('Rebanho')),
-
-          const ListTile(
-            leading: Icon(Icons.attach_money),
-            title: Text('Financeiro'),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 24),
+            child: TextButton.icon(
+              onPressed: () {
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  AppRoutes.home,
+                  (route) => false,
+                );
+              },
+              icon: const Icon(Icons.logout, color: Colors.red),
+              label: const Text('Sair', style: TextStyle(color: Colors.red)),
+            ),
           ),
         ],
       ),

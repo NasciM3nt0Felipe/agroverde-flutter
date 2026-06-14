@@ -96,22 +96,105 @@ class DatabaseHelper {
         FOREIGN KEY(talhao_id) REFERENCES talhao(id)
       )
     ''');
-    await db.execute('''
-  CREATE TABLE estoque_item (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    propriedade_id INTEGER NOT NULL,
-    nome TEXT NOT NULL,
-    categoria TEXT NOT NULL,
-    quantidade_inicial REAL NOT NULL,
-    quantidade_atual REAL NOT NULL,
-    unidade_medida TEXT NOT NULL,
-    preco_medio_unitario REAL NOT NULL,
-    estoque_minimo REAL NOT NULL,
-    fornecedor TEXT,
-    observacao TEXT,
 
-    FOREIGN KEY(propriedade_id) REFERENCES propriedade(id)
-  )
-''');
+    await db.execute('''
+      CREATE TABLE estoque_item (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        propriedade_id INTEGER NOT NULL,
+        nome TEXT NOT NULL,
+        categoria TEXT NOT NULL,
+        quantidade_inicial REAL NOT NULL,
+        quantidade_atual REAL NOT NULL,
+        unidade_medida TEXT NOT NULL,
+        preco_medio_unitario REAL NOT NULL,
+        estoque_minimo REAL NOT NULL,
+        fornecedor TEXT,
+        observacao TEXT,
+
+        FOREIGN KEY(propriedade_id) REFERENCES propriedade(id)
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE financeiro (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        propriedade_id INTEGER NOT NULL,
+        descricao TEXT NOT NULL,
+        valor REAL NOT NULL,
+        tipo TEXT NOT NULL,
+        data TEXT NOT NULL,
+        safra_id INTEGER,
+
+        FOREIGN KEY(propriedade_id) REFERENCES propriedade(id),
+        FOREIGN KEY(safra_id) REFERENCES safra(id)
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE rebanho (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        propriedade_id INTEGER NOT NULL,
+        identificacao TEXT NOT NULL,
+        especie TEXT NOT NULL,
+        raca TEXT,
+        sexo TEXT NOT NULL,
+        data_nascimento TEXT,
+        peso REAL,
+        status TEXT NOT NULL,
+        observacao TEXT,
+
+        FOREIGN KEY(propriedade_id) REFERENCES propriedade(id)
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE vacinacao_rebanho (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        animal_id INTEGER NOT NULL,
+        vacina TEXT NOT NULL,
+        data_aplicacao TEXT NOT NULL,
+        proxima_dose TEXT,
+        observacao TEXT,
+
+        FOREIGN KEY(animal_id) REFERENCES rebanho(id)
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE sanitario_rebanho (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        animal_id INTEGER NOT NULL,
+        procedimento TEXT NOT NULL,
+        data TEXT NOT NULL,
+        medicamento TEXT,
+        observacao TEXT,
+
+        FOREIGN KEY(animal_id) REFERENCES rebanho(id)
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE reproducao_rebanho (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        animal_id INTEGER NOT NULL,
+        tipo TEXT NOT NULL,
+        data TEXT NOT NULL,
+        observacao TEXT,
+
+        FOREIGN KEY(animal_id) REFERENCES rebanho(id)
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE pesagem_rebanho (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        animal_id INTEGER NOT NULL,
+        peso REAL NOT NULL,
+        data TEXT NOT NULL,
+        observacao TEXT,
+
+        FOREIGN KEY(animal_id) REFERENCES rebanho(id)
+      )
+    ''');
   }
 }

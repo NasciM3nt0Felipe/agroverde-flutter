@@ -37,6 +37,34 @@ class EstoqueItem {
     return quantidadeAtual > 0 && quantidadeAtual <= estoqueMinimo;
   }
 
+  EstoqueItem copyWith({
+    int? id,
+    int? propriedadeId,
+    String? nome,
+    String? categoria,
+    double? quantidadeInicial,
+    double? quantidadeAtual,
+    String? unidadeMedida,
+    double? precoMedioUnitario,
+    double? estoqueMinimo,
+    String? fornecedor,
+    String? observacao,
+  }) {
+    return EstoqueItem(
+      id: id ?? this.id,
+      propriedadeId: propriedadeId ?? this.propriedadeId,
+      nome: nome ?? this.nome,
+      categoria: categoria ?? this.categoria,
+      quantidadeInicial: quantidadeInicial ?? this.quantidadeInicial,
+      quantidadeAtual: quantidadeAtual ?? this.quantidadeAtual,
+      unidadeMedida: unidadeMedida ?? this.unidadeMedida,
+      precoMedioUnitario: precoMedioUnitario ?? this.precoMedioUnitario,
+      estoqueMinimo: estoqueMinimo ?? this.estoqueMinimo,
+      fornecedor: fornecedor ?? this.fornecedor,
+      observacao: observacao ?? this.observacao,
+    );
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -59,11 +87,11 @@ class EstoqueItem {
       propriedadeId: map['propriedade_id'],
       nome: map['nome'],
       categoria: map['categoria'],
-      quantidadeInicial: map['quantidade_inicial'],
-      quantidadeAtual: map['quantidade_atual'],
+      quantidadeInicial: map['quantidade_inicial']?.toDouble() ?? 0.0,
+      quantidadeAtual: map['quantidade_atual']?.toDouble() ?? 0.0,
       unidadeMedida: map['unidade_medida'],
-      precoMedioUnitario: map['preco_medio_unitario'],
-      estoqueMinimo: map['estoque_minimo'],
+      precoMedioUnitario: map['preco_medio_unitario']?.toDouble() ?? 0.0,
+      estoqueMinimo: map['estoque_minimo']?.toDouble() ?? 0.0,
       fornecedor: map['fornecedor'],
       observacao: map['observacao'],
     );

@@ -18,7 +18,52 @@ class EstoqueRepository {
       orderBy: 'nome ASC',
     );
 
-    return maps.map((map) => EstoqueItem.fromMap(map)).toList();
+    return maps.map((map) {
+      return EstoqueItem.fromMap(map);
+    }).toList();
+  }
+
+  Future<List<EstoqueItem>> listarVacinasDisponiveisPorPropriedade(
+    int propriedadeId,
+  ) async {
+    final db = await DatabaseHelper.database;
+
+    final maps = await db.query(
+      'estoque_item',
+      where:
+          'propriedade_id = ? AND LOWER(categoria) = ? AND quantidade_atual > 0',
+      whereArgs: [propriedadeId, 'vacinas'],
+      orderBy: 'nome ASC',
+    );
+
+    return maps.map((map) {
+      return EstoqueItem.fromMap(map);
+    }).toList();
+  }
+
+  Future<EstoqueItem?> buscarPorNomeCategoriaEPropriedade({
+    required int propriedadeId,
+    required String nome,
+    required String categoria,
+  }) async {
+    final db = await DatabaseHelper.database;
+
+    final maps = await db.query(
+      'estoque_item',
+      where: 'propriedade_id = ? AND LOWER(nome) = ? AND LOWER(categoria) = ?',
+      whereArgs: [
+        propriedadeId,
+        nome.trim().toLowerCase(),
+        categoria.trim().toLowerCase(),
+      ],
+      limit: 1,
+    );
+
+    if (maps.isEmpty) {
+      return null;
+    }
+
+    return EstoqueItem.fromMap(maps.first);
   }
 
   Future<int> atualizar(EstoqueItem item) async {

@@ -9,13 +9,11 @@ class DashboardPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       drawer: const _AppDrawer(),
-
       appBar: AppBar(
         title: const Text('AgroVerde'),
         backgroundColor: const Color(0xFF064E2F),
         foregroundColor: Colors.white,
       ),
-
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1200),
@@ -23,25 +21,21 @@ class DashboardPage extends StatelessWidget {
             padding: const EdgeInsets.all(24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
+              children: const [
+                Text(
                   'Olá, Felipe! 👋',
                   style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
                 ),
-
-                const SizedBox(height: 8),
-
-                const Text(
+                SizedBox(height: 8),
+                Text(
                   'Aqui está o resumo da sua propriedade.',
                   style: TextStyle(fontSize: 16, color: Colors.grey),
                 ),
-
-                const SizedBox(height: 24),
-
+                SizedBox(height: 24),
                 Wrap(
                   spacing: 16,
                   runSpacing: 16,
-                  children: const [
+                  children: [
                     _DashboardCard(
                       titulo: 'Talhões',
                       valor: '0',
@@ -64,20 +58,16 @@ class DashboardPage extends StatelessWidget {
                     ),
                   ],
                 ),
-
-                const SizedBox(height: 32),
-
-                const Text(
+                SizedBox(height: 32),
+                Text(
                   'Acesso rápido',
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
-
-                const SizedBox(height: 16),
-
+                SizedBox(height: 16),
                 Wrap(
                   spacing: 16,
                   runSpacing: 16,
-                  children: const [
+                  children: [
                     _QuickAccessCard(
                       titulo: 'Talhões e Safras',
                       subtitulo: 'Gerencie áreas e culturas',
@@ -129,7 +119,6 @@ class _DashboardCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               Icon(icone, color: const Color(0xFF064E2F), size: 32),
-              const SizedBox(height: 8),
               Text(
                 valor,
                 style: const TextStyle(
@@ -150,7 +139,10 @@ class _QuickAccessCard extends StatelessWidget {
   final String titulo;
   final String subtitulo;
 
-  const _QuickAccessCard({required this.titulo, required this.subtitulo});
+  const _QuickAccessCard({
+    required this.titulo,
+    required this.subtitulo,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -191,7 +183,10 @@ class _AppDrawer extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                Text('Gestão Rural', style: TextStyle(color: Colors.white70)),
+                Text(
+                  'Gestão Rural',
+                  style: TextStyle(color: Colors.white70),
+                ),
               ],
             ),
           ),
@@ -227,11 +222,20 @@ class _AppDrawer extends StatelessWidget {
             title: Text('Estoque'),
           ),
 
-          const ListTile(leading: Icon(Icons.pets), title: Text('Rebanho')),
+          ListTile(
+            leading: const Icon(Icons.pets),
+            title: const Text('Rebanho'),
+            onTap: () {
+              Navigator.pushNamed(context, AppRoutes.rebanho);
+            },
+          ),
 
-          const ListTile(
-            leading: Icon(Icons.attach_money),
-            title: Text('Financeiro'),
+          ListTile(
+            leading: const Icon(Icons.attach_money),
+            title: const Text('Financeiro'),
+            onTap: () {
+              Navigator.pushNamed(context, AppRoutes.financeiro);
+            },
           ),
         ],
       ),

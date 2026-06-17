@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
 
+
+// Bibliotecas adicionadas para realizar a consulta do CEP na API ViaCEP.
+// dart:convert converte o retorno JSON.
+// http permite fazer a requisição pela internet.
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+
 import '../data/sqlite/pessoa_repository.dart';
 import '../domain/entities/pessoa.dart';
 import '../domain/services/pessoa_service.dart';
@@ -19,6 +26,10 @@ class _PessoaPageState extends State<PessoaPage> {
 
   // Controla se os campos podem ser editados.
   bool _modoEdicao = true;
+
+  
+  // Controla o indicador de carregamento enquanto o CEP está sendo consultado.
+  bool _buscandoCep = false;
 
   final PessoaRepository _pessoaRepository = PessoaRepository();
   final PessoaService _pessoaService = PessoaService();
@@ -51,6 +62,85 @@ class _PessoaPageState extends State<PessoaPage> {
     _cidadeController.dispose();
     _estadoController.dispose();
     super.dispose();
+  }
+
+
+  // Função responsável por buscar o endereço automaticamente
+  // através do CEP informado pelo usuário.
+  //
+  // API utilizada:
+  // https://viacep.com.br/ws/{cep}/json/
+  //
+  // Campos preenchidos automaticamente:
+  // - Rua
+  // - Bairro
+  // - Cidade
+  // - Estado
+  // ======================================================
+  Future<void> _buscarCep(String cep) async {
+    // Remove tudo que não for número.
+    final cepLimpo = cep.replaceAll(RegExp(r'[^0-9]'), '');
+
+    // Só realiza a busca quando o CEP tiver 8 dígitos.
+    if (cepLimpo.length != 8) {
+      return;
+    }
+
+    // Ativa o carregamento no campo CEP.
+    setState(() {
+      _buscandoCep = true;
+    });
+
+    try {
+      // Monta a URL de consulta da API ViaCEP.
+      final url = Uri.parse('https://viacep.com.br/ws/$cepLimpo/json/');
+
+      // Realiza a requisição HTTP.
+      final response = await http.get(url);
+
+      // Verifica se a requisição retornou com sucesso.
+      if (response.statusCode == 200) {
+        // Converte o JSON retornado em um mapa de dados.
+        final dados = jsonDecode(response.body);
+
+        // Caso o CEP não exista, a API retorna erro igual a true.
+        if (dados['erro'] == true) {
+          if (!mounted) return;
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('CEP não encontrado.'),
+            ),
+          );
+
+          return;
+        }
+
+        // Preenche automaticamente os campos de endereço.
+        setState(() {
+          _ruaController.text = dados['logradouro'] ?? '';
+          _bairroController.text = dados['bairro'] ?? '';
+          _cidadeController.text = dados['localidade'] ?? '';
+          _estadoController.text = dados['uf'] ?? '';
+        });
+      }
+    } catch (e) {
+      // Caso ocorra erro de internet ou falha na consulta.
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Erro ao buscar o CEP. Verifique sua conexão.'),
+        ),
+      );
+    } finally {
+      // Finaliza o carregamento após a consulta.
+      if (mounted) {
+        setState(() {
+          _buscandoCep = false;
+        });
+      }
+    }
   }
 
   Future<void> _carregarPerfil() async {
@@ -138,7 +228,9 @@ class _PessoaPageState extends State<PessoaPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Perfil do Usuário')),
+      appBar: AppBar(
+        title: const Text('Perfil do Usuário'),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Center(
@@ -224,13 +316,51 @@ class _PessoaPageState extends State<PessoaPage> {
 
                       const SizedBox(height: 16),
 
+                      // ======================================================
+                      // ALTERAÇÃO 16/06/2026
+                      // Campo CEP alterado para realizar busca automática.
+                      //
+                      // Funcionamento:
+                      // - Usuário digita o CEP
+                      // - O sistema remove caracteres não numéricos
+                      // - Ao completar 8 dígitos, chama a função _buscarCep()
+                      // ======================================================
                       TextFormField(
                         enabled: _modoEdicao,
                         controller: _cepController,
-                        decoration: const InputDecoration(
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
                           labelText: 'CEP',
-                          prefixIcon: Icon(Icons.location_on),
+                          prefixIcon: const Icon(Icons.location_on),
+
+                          // ALTERAÇÃO 16/06/2026
+                          // Exibe um indicador visual enquanto a consulta está em andamento.
+                          suffixIcon: _buscandoCep
+                              ? const Padding(
+                                  padding: EdgeInsets.all(12),
+                                  child: SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  ),
+                                )
+                              : null,
                         ),
+
+                        // ALTERAÇÃO 16/06/2026
+                        // Evento executado toda vez que o usuário digita no campo CEP.
+                        onChanged: (value) {
+                          // Remove caracteres que não são números.
+                          final cepLimpo =
+                              value.replaceAll(RegExp(r'[^0-9]'), '');
+
+                          // Quando o CEP tiver 8 dígitos, realiza a busca.
+                          if (cepLimpo.length == 8) {
+                            _buscarCep(cepLimpo);
+                          }
+                        },
                       ),
 
                       const SizedBox(height: 16),
@@ -294,14 +424,13 @@ class _PessoaPageState extends State<PessoaPage> {
                         width: double.infinity,
                         height: 50,
                         child: ElevatedButton(
-                          onPressed: _modoEdicao
-                              ? _salvarPerfil
-                              : _habilitarEdicao,
+                          onPressed:
+                              _modoEdicao ? _salvarPerfil : _habilitarEdicao,
                           child: Text(
                             _modoEdicao
                                 ? (_pessoaAtual == null
-                                      ? 'Salvar Perfil'
-                                      : 'Salvar Alterações')
+                                    ? 'Salvar Perfil'
+                                    : 'Salvar Alterações')
                                 : 'Editar Perfil',
                           ),
                         ),

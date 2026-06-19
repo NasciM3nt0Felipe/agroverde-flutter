@@ -66,6 +66,24 @@ class EstoqueRepository {
     return EstoqueItem.fromMap(maps.first);
   }
 
+  /// NOVO MÉTODO
+  Future<EstoqueItem?> buscarPorId(int id) async {
+    final db = await DatabaseHelper.database;
+
+    final maps = await db.query(
+      'estoque_item',
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
+
+    if (maps.isEmpty) {
+      return null;
+    }
+
+    return EstoqueItem.fromMap(maps.first);
+  }
+
   Future<int> atualizar(EstoqueItem item) async {
     final db = await DatabaseHelper.database;
 

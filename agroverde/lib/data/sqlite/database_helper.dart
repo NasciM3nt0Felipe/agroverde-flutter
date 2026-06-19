@@ -196,5 +196,20 @@ class DatabaseHelper {
         FOREIGN KEY(animal_id) REFERENCES rebanho(id)
       )
     ''');
+
+    await db.execute('''
+      CREATE TABLE estoque_insumo (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        safra_id INTEGER NOT NULL,
+        estoque_item_id INTEGER NOT NULL,
+        quantidade_utilizada REAL NOT NULL,
+        valor_total REAL NOT NULL,
+        data_movimentacao TEXT NOT NULL,
+        observacao TEXT,
+
+        FOREIGN KEY(safra_id) REFERENCES safra(id),
+        FOREIGN KEY(estoque_item_id) REFERENCES estoque_item(id)
+      )
+    ''');
   }
 }

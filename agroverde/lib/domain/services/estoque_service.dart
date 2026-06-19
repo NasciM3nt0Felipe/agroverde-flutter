@@ -1,8 +1,11 @@
 import '../../data/sqlite/estoque_repository.dart';
+import '../../data/sqlite/financeiro_repository.dart';
 import '../entities/estoque_item.dart';
+import '../entities/lancamento_financeiro.dart';
 
 class EstoqueService {
   final EstoqueRepository _repository = EstoqueRepository();
+  final FinanceiroRepository _financeiroRepository = FinanceiroRepository();
 
   Future<List<EstoqueItem>> listarPorPropriedadeId(int propriedadeId) async {
     return await _repository.listarPorPropriedadeId(propriedadeId);
@@ -54,6 +57,21 @@ class EstoqueService {
 
     if (item.id == null) {
       await _repository.inserir(item);
+
+      final valorTotal = item.quantidadeInicial * item.precoMedioUnitario;
+
+      if (valorTotal > 0) {
+        await _financeiroRepository.inserir(
+          LancamentoFinanceiro(
+            propriedadeId: item.propriedadeId,
+            descricao: 'Compra de ${item.nome}',
+            valor: valorTotal,
+            tipo: 'despesa',
+            data: DateTime.now().toIso8601String(),
+            safraId: null,
+          ),
+        );
+      }
     } else {
       await _repository.atualizar(item);
     }

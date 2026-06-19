@@ -2,19 +2,144 @@ import 'package:flutter/material.dart';
 import 'package:agroverde/routes.dart';
 import 'package:agroverde/domain/services/sessao_service.dart';
 
-class DashboardPage extends StatelessWidget {
+import '../data/sqlite/talhao_repository.dart';
+import '../data/sqlite/safra_repository.dart';
+import '../data/sqlite/rebanho_repository.dart';
+import '../data/sqlite/financeiro_repository.dart';
+
+class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
+
+  @override
+  State<DashboardPage> createState() => _DashboardPageState();
+}
+
+class _DashboardPageState extends State<DashboardPage> {
+  final TalhaoRepository _talhaoRepository = TalhaoRepository();
+  final SafraRepository _safraRepository = SafraRepository();
+  final RebanhoRepository _rebanhoRepository = RebanhoRepository();
+  final FinanceiroRepository _financeiroRepository = FinanceiroRepository();
+
+  int _totalTalhoes = 0;
+  int _totalSafras = 0;
+  int _totalAnimais = 0;
+
+  double _receitas = 0;
+  double _despesas = 0;
+  double _saldo = 0;
+
+  bool _carregando = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _carregarDashboard();
+    });
+  }
+
+  Future<void> _abrirRota(String rota) async {
+    await Navigator.pushNamed(context, rota);
+
+    if (!mounted) return;
+
+    await _carregarDashboard();
+  }
+
+  Future<void> _carregarDashboard() async {
+    final propriedadeId = SessaoService.propriedadeId;
+
+    setState(() {
+      _carregando = true;
+    });
+
+    if (propriedadeId == null) {
+      setState(() {
+        _totalTalhoes = 0;
+        _totalSafras = 0;
+        _totalAnimais = 0;
+        _receitas = 0;
+        _despesas = 0;
+        _saldo = 0;
+        _carregando = false;
+      });
+      return;
+    }
+
+    final talhoes = await _talhaoRepository.listarPorPropriedadeId(
+      propriedadeId,
+    );
+
+    int totalSafras = 0;
+
+    for (final talhao in talhoes) {
+      final safras = await _safraRepository.listarPorTalhaoId(talhao.id!);
+      totalSafras += safras.length;
+    }
+
+    final animais = await _rebanhoRepository.listarPorPropriedadeId(
+      propriedadeId,
+    );
+
+    final lancamentos = await _financeiroRepository.listarPorPropriedadeId(
+      propriedadeId,
+    );
+
+    double receitas = 0;
+    double despesas = 0;
+
+    for (final lancamento in lancamentos) {
+      if (lancamento.tipo.toLowerCase() == 'receita') {
+        receitas += lancamento.valor;
+      } else {
+        despesas += lancamento.valor;
+      }
+    }
+
+    if (!mounted) return;
+
+    setState(() {
+      _totalTalhoes = talhoes.length;
+      _totalSafras = totalSafras;
+      _totalAnimais = animais.length;
+      _receitas = receitas;
+      _despesas = despesas;
+      _saldo = receitas - despesas;
+      _carregando = false;
+    });
+  }
+
+  String _formatarMoeda(double valor) {
+    return 'R\$ ${valor.toStringAsFixed(2).replaceAll('.', ',')}';
+  }
 
   @override
   Widget build(BuildContext context) {
     final nomePropriedade = SessaoService.propriedadeSelecionada?.nome;
 
     return Scaffold(
-      drawer: const _AppDrawer(),
+      drawer: _AppDrawer(abrirRota: _abrirRota),
       appBar: AppBar(
         title: const Text('AgroVerde'),
         backgroundColor: const Color(0xFF064E2F),
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            tooltip: 'Atualizar painel',
+            onPressed: _carregarDashboard,
+            icon: _carregando
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.refresh),
+          ),
+        ],
       ),
       body: Container(
         decoration: const BoxDecoration(
@@ -87,26 +212,46 @@ class DashboardPage extends StatelessWidget {
                     Wrap(
                       spacing: 16,
                       runSpacing: 16,
-                      children: const [
+                      children: [
                         _DashboardCard(
                           titulo: 'Talhões',
-                          valor: '0',
+                          valor: _totalTalhoes.toString(),
                           icone: Icons.agriculture,
                         ),
                         _DashboardCard(
                           titulo: 'Safras',
-                          valor: '0',
+                          valor: _totalSafras.toString(),
                           icone: Icons.grass,
                         ),
                         _DashboardCard(
                           titulo: 'Animais',
-                          valor: '0',
+                          valor: _totalAnimais.toString(),
                           icone: Icons.pets,
                         ),
                         _DashboardCard(
                           titulo: 'Saldo',
-                          valor: 'R\$ 0,00',
-                          icone: Icons.attach_money,
+                          valor: _formatarMoeda(_saldo),
+                          icone: Icons.account_balance_wallet,
+                          corIcone: _saldo < 0
+                              ? Colors.red
+                              : const Color(0xFF064E2F),
+                          corValor: _saldo < 0
+                              ? Colors.red
+                              : const Color(0xFF064E2F),
+                        ),
+                        _DashboardCard(
+                          titulo: 'Receitas',
+                          valor: _formatarMoeda(_receitas),
+                          icone: Icons.trending_up,
+                          corIcone: Colors.green,
+                          corValor: Colors.green,
+                        ),
+                        _DashboardCard(
+                          titulo: 'Despesas',
+                          valor: _formatarMoeda(_despesas),
+                          icone: Icons.trending_down,
+                          corIcone: Colors.red,
+                          corValor: Colors.red,
                         ),
                       ],
                     ),
@@ -126,26 +271,30 @@ class DashboardPage extends StatelessWidget {
                     Wrap(
                       spacing: 16,
                       runSpacing: 16,
-                      children: const [
+                      children: [
                         _QuickAccessCard(
                           titulo: 'Talhões e Safras',
                           subtitulo: 'Gerencie áreas e culturas',
                           rota: AppRoutes.talhoesSafras,
+                          abrirRota: _abrirRota,
                         ),
                         _QuickAccessCard(
                           titulo: 'Estoque',
                           subtitulo: 'Controle de insumos',
                           rota: AppRoutes.estoque,
+                          abrirRota: _abrirRota,
                         ),
                         _QuickAccessCard(
                           titulo: 'Rebanho',
                           subtitulo: 'Gestão animal',
                           rota: AppRoutes.rebanho,
+                          abrirRota: _abrirRota,
                         ),
                         _QuickAccessCard(
                           titulo: 'Financeiro',
                           subtitulo: 'Receitas e despesas',
                           rota: AppRoutes.financeiro,
+                          abrirRota: _abrirRota,
                         ),
                       ],
                     ),
@@ -164,11 +313,15 @@ class _DashboardCard extends StatelessWidget {
   final String titulo;
   final String valor;
   final IconData icone;
+  final Color? corIcone;
+  final Color? corValor;
 
   const _DashboardCard({
     required this.titulo,
     required this.valor,
     required this.icone,
+    this.corIcone,
+    this.corValor,
   });
 
   @override
@@ -183,12 +336,13 @@ class _DashboardCard extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              Icon(icone, color: const Color(0xFF064E2F), size: 32),
+              Icon(icone, color: corIcone ?? const Color(0xFF064E2F), size: 32),
               Text(
                 valor,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
+                  color: corValor ?? Colors.black,
                 ),
               ),
               Text(titulo),
@@ -204,11 +358,13 @@ class _QuickAccessCard extends StatelessWidget {
   final String titulo;
   final String subtitulo;
   final String rota;
+  final Future<void> Function(String rota) abrirRota;
 
   const _QuickAccessCard({
     required this.titulo,
     required this.subtitulo,
     required this.rota,
+    required this.abrirRota,
   });
 
   @override
@@ -222,7 +378,7 @@ class _QuickAccessCard extends StatelessWidget {
           subtitle: Text(subtitulo),
           trailing: const Icon(Icons.arrow_forward_ios),
           onTap: () {
-            Navigator.pushNamed(context, rota);
+            abrirRota(rota);
           },
         ),
       ),
@@ -231,7 +387,14 @@ class _QuickAccessCard extends StatelessWidget {
 }
 
 class _AppDrawer extends StatelessWidget {
-  const _AppDrawer();
+  final Future<void> Function(String rota) abrirRota;
+
+  const _AppDrawer({required this.abrirRota});
+
+  void _navegar(BuildContext context, String rota) {
+    Navigator.pop(context);
+    abrirRota(rota);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -286,63 +449,34 @@ class _AppDrawer extends StatelessWidget {
               padding: EdgeInsets.zero,
               children: [
                 ListTile(
-                  leading: const Icon(Icons.home),
-                  title: const Text('Início'),
-                  onTap: () {
-                    Navigator.pushNamedAndRemoveUntil(
-                      context,
-                      AppRoutes.home,
-                      (route) => false,
-                    );
-                  },
-                ),
-
-                ListTile(
                   leading: const Icon(Icons.person),
                   title: const Text('Perfil'),
-                  onTap: () {
-                    Navigator.pushNamed(context, AppRoutes.perfil);
-                  },
+                  onTap: () => _navegar(context, AppRoutes.perfil),
                 ),
-
                 ListTile(
                   leading: const Icon(Icons.home_work),
                   title: const Text('Propriedades'),
-                  onTap: () {
-                    Navigator.pushNamed(context, AppRoutes.propriedades);
-                  },
+                  onTap: () => _navegar(context, AppRoutes.propriedades),
                 ),
-
                 ListTile(
                   leading: const Icon(Icons.agriculture),
                   title: const Text('Talhões e Safras'),
-                  onTap: () {
-                    Navigator.pushNamed(context, AppRoutes.talhoesSafras);
-                  },
+                  onTap: () => _navegar(context, AppRoutes.talhoesSafras),
                 ),
-
                 ListTile(
                   leading: const Icon(Icons.inventory),
                   title: const Text('Estoque'),
-                  onTap: () {
-                    Navigator.pushNamed(context, AppRoutes.estoque);
-                  },
+                  onTap: () => _navegar(context, AppRoutes.estoque),
                 ),
-
                 ListTile(
                   leading: const Icon(Icons.pets),
                   title: const Text('Rebanho'),
-                  onTap: () {
-                    Navigator.pushNamed(context, AppRoutes.rebanho);
-                  },
+                  onTap: () => _navegar(context, AppRoutes.rebanho),
                 ),
-
                 ListTile(
                   leading: const Icon(Icons.attach_money),
                   title: const Text('Financeiro'),
-                  onTap: () {
-                    Navigator.pushNamed(context, AppRoutes.financeiro);
-                  },
+                  onTap: () => _navegar(context, AppRoutes.financeiro),
                 ),
               ],
             ),

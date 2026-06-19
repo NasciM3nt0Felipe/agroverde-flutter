@@ -38,10 +38,6 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
   List<Talhao> _talhoes = [];
   List<Safra> _safras = [];
 
-  /// Talhão atualmente selecionado.
-  ///
-  /// Todas as safras listadas/cadastradas
-  /// serão vinculadas a este talhão.
   Talhao? _talhaoSelecionado;
 
   bool _mostrarFormulario = false;
@@ -53,6 +49,18 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
   int? _safraEditandoId;
 
   String _statusSafra = 'Planejada';
+
+  /// Erro específico do campo de área do talhão.
+  ///
+  /// Usado para exibir no próprio TextFormField quando a regra
+  /// de área total da propriedade for violada.
+  String? _erroAreaTalhao;
+
+  /// Erro específico do formulário de safra.
+  ///
+  /// Usado para exibir um aviso visual quando a regra de negócio
+  /// impedir o cadastro/edição, como no caso de já existir safra ativa.
+  String? _erroSafra;
 
   @override
   void initState() {
@@ -120,6 +128,10 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
   }
 
   Future<void> _salvarTalhao() async {
+    setState(() {
+      _erroAreaTalhao = null;
+    });
+
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -166,13 +178,23 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
-      );
+      final mensagem = e.toString().replaceAll('Exception: ', '');
+
+      setState(() {
+        _erroAreaTalhao = mensagem;
+      });
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(mensagem)));
     }
   }
 
   Future<void> _salvarSafra() async {
+    setState(() {
+      _erroSafra = null;
+    });
+
     if (_talhaoSelecionado == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Selecione um talhão primeiro.')),
@@ -216,9 +238,15 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
-      );
+      final mensagem = e.toString().replaceAll('Exception: ', '');
+
+      setState(() {
+        _erroSafra = mensagem;
+      });
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(mensagem)));
     }
   }
 
@@ -260,6 +288,7 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
       _mostrarFormulario = true;
       _editando = false;
       _talhaoEditandoId = null;
+      _erroAreaTalhao = null;
     });
   }
 
@@ -271,6 +300,7 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
       _editandoSafra = false;
       _safraEditandoId = null;
       _statusSafra = 'Planejada';
+      _erroSafra = null;
     });
   }
 
@@ -284,6 +314,7 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
       _mostrarFormulario = true;
       _editando = true;
       _talhaoEditandoId = talhao.id;
+      _erroAreaTalhao = null;
     });
   }
 
@@ -301,6 +332,7 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
       _editandoSafra = true;
       _safraEditandoId = safra.id;
       _statusSafra = safra.status;
+      _erroSafra = null;
     });
   }
 
@@ -308,6 +340,7 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
     setState(() {
       _talhaoSelecionado = talhao;
       _mostrarFormularioSafra = false;
+      _erroSafra = null;
     });
 
     await _carregarSafras(talhao.id!);
@@ -320,6 +353,7 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
       _mostrarFormulario = false;
       _editando = false;
       _talhaoEditandoId = null;
+      _erroAreaTalhao = null;
     });
   }
 
@@ -331,6 +365,7 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
       _editandoSafra = false;
       _safraEditandoId = null;
       _statusSafra = 'Planejada';
+      _erroSafra = null;
     });
   }
 
@@ -339,6 +374,7 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
     _areaController.clear();
     _tipoSoloController.clear();
     _observacaoController.clear();
+    _erroAreaTalhao = null;
   }
 
   void _limparCamposSafra() {
@@ -349,10 +385,215 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
     _dataColheitaPrevistaController.clear();
     _producaoEstimadaController.clear();
     _observacaoSafraController.clear();
+    _erroSafra = null;
   }
 
   bool _talhaoEstaSelecionado(Talhao talhao) {
     return _talhaoSelecionado?.id == talhao.id;
+  }
+
+  /// Abre o fluxo de plantio da safra.
+  ///
+  /// Neste primeiro momento o botão apenas prepara a navegação/ação visual.
+  /// A regra de baixa de sementes no estoque será tratada no EstoqueService.
+  void _abrirPlantio(Safra safra) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Plantio da safra ${safra.nome} será implementado.'),
+      ),
+    );
+  }
+
+  /// Abre o fluxo de fertilização da safra.
+  ///
+  /// A futura implementação deverá filtrar itens do estoque pela categoria
+  /// Fertilizantes e registrar o consumo sem gerar nova despesa financeira.
+  void _abrirFertilizacao(Safra safra) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Fertilização da safra ${safra.nome} será implementada.'),
+      ),
+    );
+  }
+
+  /// Abre o fluxo de pulverização/controle de pragas.
+  ///
+  /// A futura implementação deverá filtrar itens do estoque pela categoria
+  /// Defensivos e registrar a aplicação vinculada à safra.
+  void _abrirPulverizacao(Safra safra) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Pulverização da safra ${safra.nome} será implementada.'),
+      ),
+    );
+  }
+
+  /// Abre o fluxo de colheita da safra.
+  ///
+  /// A futura implementação deverá atualizar a produção obtida e gerar
+  /// receita financeira quando houver valor de venda informado.
+  void _abrirColheita(Safra safra) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Colheita da safra ${safra.nome} será implementada.'),
+      ),
+    );
+  }
+
+  /// Cria um botão responsivo para as ações operacionais da safra.
+  ///
+  /// O Wrap usado na listagem permite que esses botões fiquem lado a lado
+  /// no desktop e quebrem linha automaticamente em telas menores.
+  Widget _botaoAcaoSafra({
+    required IconData icone,
+    required String titulo,
+    required String subtitulo,
+    required VoidCallback onTap,
+  }) {
+    return SizedBox(
+      width: 190,
+      child: OutlinedButton(
+        onPressed: onTap,
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.all(14),
+          alignment: Alignment.centerLeft,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(icone, color: const Color(0xFF064E2F)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    titulo,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(subtitulo, style: const TextStyle(fontSize: 12)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Monta o card de uma safra com ações operacionais.
+  ///
+  /// Aqui fica apenas a composição visual.
+  /// As regras de negócio de plantio, fertilização, pulverização e colheita
+  /// serão implementadas nos services específicos.
+  Widget _buildSafraCard(Safra safra) {
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.grass, color: Color(0xFF064E2F)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        safra.nome,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Cultura: ${safra.cultura}'
+                        '${safra.variedade == null || safra.variedade!.isEmpty ? '' : ' | Variedade: ${safra.variedade}'}'
+                        ' | Status: ${safra.status}',
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Plantio: ${safra.dataPlantio}'
+                        '${safra.dataColheitaPrevista == null || safra.dataColheitaPrevista!.isEmpty ? '' : ' | Colheita prevista: ${safra.dataColheitaPrevista}'}',
+                        style: const TextStyle(fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    OutlinedButton(
+                      onPressed: () {
+                        _editarSafra(safra);
+                      },
+                      child: const Text('Editar'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        _excluirSafra(safra);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Excluir'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 12),
+            const Text(
+              'Ações da safra',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                _botaoAcaoSafra(
+                  icone: Icons.spa,
+                  titulo: 'Plantio',
+                  subtitulo: 'Registrar sementes',
+                  onTap: () => _abrirPlantio(safra),
+                ),
+                _botaoAcaoSafra(
+                  icone: Icons.science,
+                  titulo: 'Fertilização',
+                  subtitulo: 'Aplicar fertilizantes',
+                  onTap: () => _abrirFertilizacao(safra),
+                ),
+                _botaoAcaoSafra(
+                  icone: Icons.bug_report,
+                  titulo: 'Pulverização',
+                  subtitulo: 'Controle de pragas',
+                  onTap: () => _abrirPulverizacao(safra),
+                ),
+                _botaoAcaoSafra(
+                  icone: Icons.agriculture,
+                  titulo: 'Colheita',
+                  subtitulo: 'Registrar produção',
+                  onTap: () => _abrirColheita(safra),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -435,10 +676,18 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
                             TextFormField(
                               controller: _areaController,
                               keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 labelText: 'Área do talhão (hectares)',
-                                prefixIcon: Icon(Icons.square_foot),
+                                prefixIcon: const Icon(Icons.square_foot),
+                                errorText: _erroAreaTalhao,
                               ),
+                              onChanged: (_) {
+                                if (_erroAreaTalhao != null) {
+                                  setState(() {
+                                    _erroAreaTalhao = null;
+                                  });
+                                }
+                              },
                               validator: (value) {
                                 if (value == null || value.trim().isEmpty) {
                                   return 'Informe a área do talhão';
@@ -657,6 +906,38 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
                               ),
                             ),
 
+                            if (_erroSafra != null) ...[
+                              const SizedBox(height: 12),
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.shade50,
+                                  border: Border.all(color: Colors.red),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Icon(
+                                      Icons.warning_amber_rounded,
+                                      color: Colors.red,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        _erroSafra!,
+                                        style: const TextStyle(
+                                          color: Colors.red,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+
                             const SizedBox(height: 16),
 
                             TextFormField(
@@ -813,41 +1094,11 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
                               physics: const NeverScrollableScrollPhysics(),
                               itemCount: _safras.length,
                               separatorBuilder: (context, index) =>
-                                  const Divider(),
+                                  const SizedBox(height: 12),
                               itemBuilder: (context, index) {
                                 final safra = _safras[index];
 
-                                return ListTile(
-                                  leading: const Icon(
-                                    Icons.grass,
-                                    color: Color(0xFF064E2F),
-                                  ),
-                                  title: Text(safra.nome),
-                                  subtitle: Text(
-                                    'Cultura: ${safra.cultura} | Status: ${safra.status}',
-                                  ),
-                                  trailing: Wrap(
-                                    spacing: 8,
-                                    children: [
-                                      OutlinedButton(
-                                        onPressed: () {
-                                          _editarSafra(safra);
-                                        },
-                                        child: const Text('Editar'),
-                                      ),
-                                      ElevatedButton(
-                                        onPressed: () {
-                                          _excluirSafra(safra);
-                                        },
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.red,
-                                          foregroundColor: Colors.white,
-                                        ),
-                                        child: const Text('Excluir'),
-                                      ),
-                                    ],
-                                  ),
-                                );
+                                return _buildSafraCard(safra);
                               },
                             ),
                         ],

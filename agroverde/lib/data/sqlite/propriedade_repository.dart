@@ -38,4 +38,21 @@ class PropriedadeRepository {
 
     return await db.delete('propriedade', where: 'id = ?', whereArgs: [id]);
   }
+
+  Future<Propriedade?> buscarPorId(int id) async {
+    final db = await DatabaseHelper.database;
+
+    final resultado = await db.query(
+      'propriedade',
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
+
+    if (resultado.isEmpty) {
+      return null;
+    }
+
+    return Propriedade.fromMap(resultado.first);
+  }
 }

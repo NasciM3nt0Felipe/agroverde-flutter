@@ -21,6 +21,17 @@ class SafraService {
       throw Exception('Informe a data de plantio.');
     }
 
+    if (safra.status == 'Planejada' || safra.status == 'Em andamento') {
+      final existeSafraAtiva = await _repository.existeSafraAtiva(
+        safra.talhaoId,
+        ignorarSafraId: safra.id,
+      );
+
+      if (existeSafraAtiva) {
+        throw Exception('Já existe uma safra ativa neste talhão.');
+      }
+    }
+
     if (safra.id == null) {
       await _repository.inserir(safra);
     } else {

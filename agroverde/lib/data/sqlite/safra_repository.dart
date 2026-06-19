@@ -25,18 +25,42 @@ class SafraRepository {
 
     final maps = await db.query(
       'safra',
-
-      /// Filtra as safras pelo talhão.
       where: 'talhao_id = ?',
-
-      /// ID do talhão selecionado.
       whereArgs: [talhaoId],
-
-      /// Mostra as mais recentes primeiro.
       orderBy: 'id DESC',
     );
 
     return maps.map((map) => Safra.fromMap(map)).toList();
+  }
+
+  /// Verifica se já existe uma safra ativa no talhão.
+  ///
+  /// Status considerados ativos:
+  /// - Planejada
+  /// - Em andamento
+  ///
+  /// O parâmetro ignorarSafraId é usado na edição,
+  /// para não comparar a safra com ela mesma.
+  Future<bool> existeSafraAtiva(int talhaoId, {int? ignorarSafraId}) async {
+    final db = await DatabaseHelper.database;
+
+    String where = 'talhao_id = ? AND status IN (?, ?)';
+
+    final whereArgs = <dynamic>[talhaoId, 'Planejada', 'Em andamento'];
+
+    if (ignorarSafraId != null) {
+      where += ' AND id != ?';
+      whereArgs.add(ignorarSafraId);
+    }
+
+    final maps = await db.query(
+      'safra',
+      where: where,
+      whereArgs: whereArgs,
+      limit: 1,
+    );
+
+    return maps.isNotEmpty;
   }
 
   /// Atualiza os dados de uma safra existente.

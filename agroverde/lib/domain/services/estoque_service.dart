@@ -184,4 +184,14 @@ class EstoqueService {
       categoria: categoria,
     );
   }
+
+  Future<Map<String, dynamic>?> buscarUltimoConsumoPorCategoria({
+    required int safraId,
+    required String categoria,
+  }) async {
+    return await _repository.buscarUltimoConsumoPorCategoria(
+      safraId: safraId,
+      categoria: categoria,
+    );
+  }
 }

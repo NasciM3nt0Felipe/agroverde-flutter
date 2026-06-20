@@ -151,4 +151,39 @@ class EstoqueRepository {
 
     return resultado.isNotEmpty;
   }
+
+  /// Busca o último consumo de uma safra por categoria de estoque.
+  ///
+  /// Usado para montar o resumo operacional da safra com:
+  /// item utilizado, quantidade, unidade e data.
+  Future<Map<String, dynamic>?> buscarUltimoConsumoPorCategoria({
+    required int safraId,
+    required String categoria,
+  }) async {
+    final db = await DatabaseHelper.database;
+
+    final resultado = await db.rawQuery(
+      '''
+      SELECT
+        item.nome AS nome,
+        item.unidade_medida AS unidade_medida,
+        ei.quantidade_utilizada AS quantidade_utilizada,
+        ei.data_movimentacao AS data_movimentacao
+      FROM estoque_insumo ei
+      INNER JOIN estoque_item item
+        ON item.id = ei.estoque_item_id
+      WHERE ei.safra_id = ?
+        AND LOWER(item.categoria) = ?
+      ORDER BY ei.id DESC
+      LIMIT 1
+      ''',
+      [safraId, categoria.trim().toLowerCase()],
+    );
+
+    if (resultado.isEmpty) {
+      return null;
+    }
+
+    return resultado.first;
+  }
 }

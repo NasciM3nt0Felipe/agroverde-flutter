@@ -398,45 +398,134 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
     return _talhaoSelecionado?.id == talhao.id;
   }
 
-  /// Verifica se a safra possui consumo de sementes registrado.
+  /// Busca o último consumo de sementes da safra.
   ///
-  /// Usado para marcar visualmente o Plantio como realizado.
-  Future<bool> _plantioRealizado(Safra safra) async {
+  /// Usado para exibir no resumo operacional:
+  /// Plantio - Item | Quantidade unidade | Data
+  Future<Map<String, dynamic>?> _plantioResumo(Safra safra) async {
     if (safra.id == null) {
-      return false;
+      return null;
     }
 
-    return await _estoqueService.existeConsumoPorSafraECategoria(
+    return await _estoqueService.buscarUltimoConsumoPorCategoria(
       safraId: safra.id!,
       categoria: 'sementes',
     );
   }
 
-  /// Verifica se a safra possui consumo de fertilizantes registrado.
+  /// Busca o último consumo de fertilizantes da safra.
   ///
-  /// Usado para marcar visualmente a Fertilização como realizada.
-  Future<bool> _fertilizacaoRealizada(Safra safra) async {
+  /// Usado para exibir no resumo operacional:
+  /// Fertilização - Item | Quantidade unidade | Data
+  Future<Map<String, dynamic>?> _fertilizacaoResumo(Safra safra) async {
     if (safra.id == null) {
-      return false;
+      return null;
     }
 
-    return await _estoqueService.existeConsumoPorSafraECategoria(
+    return await _estoqueService.buscarUltimoConsumoPorCategoria(
       safraId: safra.id!,
       categoria: 'fertilizantes',
     );
   }
 
-  /// Verifica se a safra possui consumo de defensivos registrado.
+  /// Busca o último consumo de defensivos da safra.
   ///
-  /// Usado para marcar visualmente a Pulverização como realizada.
-  Future<bool> _pulverizacaoRealizada(Safra safra) async {
+  /// Usado para exibir no resumo operacional:
+  /// Pulverização - Item | Quantidade unidade | Data
+  Future<Map<String, dynamic>?> _pulverizacaoResumo(Safra safra) async {
     if (safra.id == null) {
-      return false;
+      return null;
     }
 
-    return await _estoqueService.existeConsumoPorSafraECategoria(
+    return await _estoqueService.buscarUltimoConsumoPorCategoria(
       safraId: safra.id!,
       categoria: 'defensivos',
+    );
+  }
+
+  /// Formata a data ISO gravada no banco para dd/MM/yyyy.
+  String _formatarDataMovimentacao(dynamic valor) {
+    if (valor == null) {
+      return '';
+    }
+
+    final texto = valor.toString();
+
+    try {
+      final data = DateTime.parse(texto);
+      final dia = data.day.toString().padLeft(2, '0');
+      final mes = data.month.toString().padLeft(2, '0');
+      final ano = data.year.toString();
+
+      return '$dia/$mes/$ano';
+    } catch (_) {
+      if (texto.length >= 10 && texto.contains('-')) {
+        final partes = texto.substring(0, 10).split('-');
+
+        if (partes.length == 3) {
+          return '${partes[2]}/${partes[1]}/${partes[0]}';
+        }
+      }
+
+      return texto;
+    }
+  }
+
+  /// Formata a quantidade evitando casas decimais desnecessárias.
+  String _formatarQuantidade(dynamic valor) {
+    final numero = double.tryParse(valor.toString());
+
+    if (numero == null) {
+      return valor.toString();
+    }
+
+    if (numero % 1 == 0) {
+      return numero.toInt().toString();
+    }
+
+    return numero.toStringAsFixed(2).replaceAll('.', ',');
+  }
+
+  /// Monta a linha exibida no resumo operacional.
+  Widget _linhaResumoOperacional({
+    required IconData icone,
+    required String titulo,
+    required Map<String, dynamic>? dados,
+  }) {
+    final realizado = dados != null;
+
+    String texto;
+
+    if (!realizado) {
+      texto = '$titulo: Pendente';
+    } else {
+      final nome = dados['nome']?.toString() ?? 'Item não informado';
+      final quantidade = _formatarQuantidade(
+        dados['quantidade_utilizada'] ?? 0,
+      );
+      final unidade = dados['unidade_medida']?.toString() ?? '';
+      final data = _formatarDataMovimentacao(dados['data_movimentacao']);
+
+      texto = '$titulo - $nome | $quantidade $unidade';
+
+      if (data.isNotEmpty) {
+        texto = '$texto | $data';
+      }
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        children: [
+          Icon(
+            icone,
+            size: 18,
+            color: realizado ? Colors.green : Colors.orange,
+          ),
+          const SizedBox(width: 8),
+          Expanded(child: Text(texto, style: const TextStyle(fontSize: 13))),
+        ],
+      ),
     );
   }
 
@@ -520,18 +609,6 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
         ),
       );
     }
-  }
-
-  /// Abre o fluxo de colheita da safra.
-  ///
-  /// A futura implementação deverá atualizar a produção obtida e gerar
-  /// receita financeira quando houver valor de venda informado.
-  void _abrirColheita(Safra safra) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Colheita da safra ${safra.nome} será implementada.'),
-      ),
-    );
   }
 
   /// Cria um botão responsivo para as ações operacionais da safra.
@@ -648,18 +725,18 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
             ),
             const SizedBox(height: 12),
 
-            FutureBuilder<List<bool>>(
+            FutureBuilder<List<Map<String, dynamic>?>>(
               future: Future.wait([
-                _plantioRealizado(safra),
-                _fertilizacaoRealizada(safra),
-                _pulverizacaoRealizada(safra),
+                _plantioResumo(safra),
+                _fertilizacaoResumo(safra),
+                _pulverizacaoResumo(safra),
               ]),
               builder: (context, snapshot) {
-                final dados = snapshot.data ?? [false, false, false];
+                final dados = snapshot.data ?? [null, null, null];
 
-                final plantioRealizado = dados[0];
-                final fertilizacaoRealizada = dados[1];
-                final pulverizacaoRealizada = dados[2];
+                final plantio = dados[0];
+                final fertilizacao = dados[1];
+                final pulverizacao = dados[2];
 
                 return Container(
                   width: double.infinity,
@@ -677,70 +754,20 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.spa,
-                            size: 18,
-                            color: plantioRealizado
-                                ? Colors.green
-                                : Colors.orange,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            plantioRealizado
-                                ? 'Plantio: Realizado'
-                                : 'Plantio: Pendente',
-                          ),
-                        ],
+                      _linhaResumoOperacional(
+                        icone: Icons.spa,
+                        titulo: 'Plantio',
+                        dados: plantio,
                       ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.science,
-                            size: 18,
-                            color: fertilizacaoRealizada
-                                ? Colors.green
-                                : Colors.orange,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            fertilizacaoRealizada
-                                ? 'Fertilização: Realizada'
-                                : 'Fertilização: Pendente',
-                          ),
-                        ],
+                      _linhaResumoOperacional(
+                        icone: Icons.science,
+                        titulo: 'Fertilização',
+                        dados: fertilizacao,
                       ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.bug_report,
-                            size: 18,
-                            color: pulverizacaoRealizada
-                                ? Colors.green
-                                : Colors.orange,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            pulverizacaoRealizada
-                                ? 'Pulverização: Realizada'
-                                : 'Pulverização: Pendente',
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      const Row(
-                        children: [
-                          Icon(
-                            Icons.agriculture,
-                            size: 18,
-                            color: Colors.orange,
-                          ),
-                          SizedBox(width: 8),
-                          Text('Colheita: Pendente'),
-                        ],
+                      _linhaResumoOperacional(
+                        icone: Icons.bug_report,
+                        titulo: 'Pulverização',
+                        dados: pulverizacao,
                       ),
                     ],
                   ),
@@ -777,12 +804,6 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
                   titulo: 'Pulverização',
                   subtitulo: 'Controle de pragas',
                   onTap: () => _abrirPulverizacao(safra),
-                ),
-                _botaoAcaoSafra(
-                  icone: Icons.agriculture,
-                  titulo: 'Colheita',
-                  subtitulo: 'Registrar produção',
-                  onTap: () => _abrirColheita(safra),
                 ),
               ],
             ),

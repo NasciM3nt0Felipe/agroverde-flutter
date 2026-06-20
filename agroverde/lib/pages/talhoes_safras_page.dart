@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'plantio_page.dart';
+import 'fertilizacao_page.dart';
 import '../theme/app_theme.dart';
 import '../domain/entities/talhao.dart';
 import '../domain/entities/safra.dart';
@@ -396,16 +397,46 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
     return _talhaoSelecionado?.id == talhao.id;
   }
 
-  /// Verifica se a safra possui consumo de insumos registrado.
+  /// Verifica se a safra possui consumo de sementes registrado.
   ///
-  /// Nesta fase, usamos qualquer registro em estoque_insumo
-  /// como indicação visual de que o plantio/consumo já ocorreu.
+  /// Usado para marcar visualmente o Plantio como realizado.
   Future<bool> _plantioRealizado(Safra safra) async {
     if (safra.id == null) {
       return false;
     }
 
-    return await _estoqueService.existeConsumoPorSafra(safra.id!);
+    return await _estoqueService.existeConsumoPorSafraECategoria(
+      safraId: safra.id!,
+      categoria: 'sementes',
+    );
+  }
+
+  /// Verifica se a safra possui consumo de fertilizantes registrado.
+  ///
+  /// Usado para marcar visualmente a Fertilização como realizada.
+  Future<bool> _fertilizacaoRealizada(Safra safra) async {
+    if (safra.id == null) {
+      return false;
+    }
+
+    return await _estoqueService.existeConsumoPorSafraECategoria(
+      safraId: safra.id!,
+      categoria: 'fertilizantes',
+    );
+  }
+
+  /// Verifica se a safra possui consumo de defensivos registrado.
+  ///
+  /// Usado para marcar visualmente a Pulverização como realizada.
+  Future<bool> _pulverizacaoRealizada(Safra safra) async {
+    if (safra.id == null) {
+      return false;
+    }
+
+    return await _estoqueService.existeConsumoPorSafraECategoria(
+      safraId: safra.id!,
+      categoria: 'defensivos',
+    );
   }
 
   /// Abre a tela de plantio vinculada à safra selecionada.
@@ -434,16 +465,32 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
     }
   }
 
-  /// Abre o fluxo de fertilização da safra.
+  /// Abre a tela de fertilização vinculada à safra selecionada.
   ///
-  /// A futura implementação deverá filtrar itens do estoque pela categoria
-  /// Fertilizantes e registrar o consumo sem gerar nova despesa financeira.
-  void _abrirFertilizacao(Safra safra) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Fertilização da safra ${safra.nome} será implementada.'),
-      ),
+  /// A Page apenas navega e atualiza a interface após o retorno.
+  /// A regra de baixa de fertilizantes e registro em estoque_insumo
+  /// permanece concentrada no EstoqueService.
+  Future<void> _abrirFertilizacao(Safra safra) async {
+    final resultado = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => FertilizacaoPage(safra: safra)),
     );
+
+    if (!mounted) return;
+
+    if (resultado == true) {
+      if (_talhaoSelecionado?.id != null) {
+        await _carregarSafras(_talhaoSelecionado!.id!);
+      }
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Fertilização da safra ${safra.nome} registrada.'),
+        ),
+      );
+    }
   }
 
   /// Abre o fluxo de pulverização/controle de pragas.
@@ -584,10 +631,18 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
             ),
             const SizedBox(height: 12),
 
-            FutureBuilder<bool>(
-              future: _plantioRealizado(safra),
+            FutureBuilder<List<bool>>(
+              future: Future.wait([
+                _plantioRealizado(safra),
+                _fertilizacaoRealizada(safra),
+                _pulverizacaoRealizada(safra),
+              ]),
               builder: (context, snapshot) {
-                final plantioRealizado = snapshot.data ?? false;
+                final dados = snapshot.data ?? [false, false, false];
+
+                final plantioRealizado = dados[0];
+                final fertilizacaoRealizada = dados[1];
+                final pulverizacaoRealizada = dados[2];
 
                 return Container(
                   width: double.infinity,
@@ -623,23 +678,43 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
                         ],
                       ),
                       const SizedBox(height: 4),
-                      const Row(
+                      Row(
                         children: [
-                          Icon(Icons.science, size: 18, color: Colors.orange),
-                          SizedBox(width: 8),
-                          Text('Fertilização: Pendente'),
+                          Icon(
+                            fertilizacaoRealizada
+                                ? Icons.check_circle
+                                : Icons.science,
+                            size: 18,
+                            color: fertilizacaoRealizada
+                                ? Colors.green
+                                : Colors.orange,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            fertilizacaoRealizada
+                                ? 'Fertilização: Realizada'
+                                : 'Fertilização: Pendente',
+                          ),
                         ],
                       ),
                       const SizedBox(height: 4),
-                      const Row(
+                      Row(
                         children: [
                           Icon(
-                            Icons.bug_report,
+                            pulverizacaoRealizada
+                                ? Icons.check_circle
+                                : Icons.bug_report,
                             size: 18,
-                            color: Colors.orange,
+                            color: pulverizacaoRealizada
+                                ? Colors.green
+                                : Colors.orange,
                           ),
-                          SizedBox(width: 8),
-                          Text('Pulverização: Pendente'),
+                          const SizedBox(width: 8),
+                          Text(
+                            pulverizacaoRealizada
+                                ? 'Pulverização: Realizada'
+                                : 'Pulverização: Pendente',
+                          ),
                         ],
                       ),
                       const SizedBox(height: 4),

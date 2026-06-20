@@ -174,4 +174,14 @@ class EstoqueService {
   Future<bool> existeConsumoPorSafra(int safraId) async {
     return await _repository.existeConsumoPorSafra(safraId);
   }
+
+  Future<bool> existeConsumoPorSafraECategoria({
+    required int safraId,
+    required String categoria,
+  }) async {
+    return await _repository.existeConsumoPorSafraECategoria(
+      safraId: safraId,
+      categoria: categoria,
+    );
+  }
 }

@@ -123,4 +123,32 @@ class EstoqueRepository {
 
     return await db.delete('estoque_item', where: 'id = ?', whereArgs: [id]);
   }
+
+  /// Verifica se existe consumo de insumo por safra e categoria.
+  ///
+  /// Exemplo:
+  /// - Sementes -> Plantio
+  /// - Fertilizantes -> Fertilização
+  /// - Defensivos -> Pulverização
+  Future<bool> existeConsumoPorSafraECategoria({
+    required int safraId,
+    required String categoria,
+  }) async {
+    final db = await DatabaseHelper.database;
+
+    final resultado = await db.rawQuery(
+      '''
+    SELECT ei.id
+    FROM estoque_insumo ei
+    INNER JOIN estoque_item item
+      ON item.id = ei.estoque_item_id
+    WHERE ei.safra_id = ?
+      AND LOWER(item.categoria) = ?
+    LIMIT 1
+    ''',
+      [safraId, categoria.trim().toLowerCase()],
+    );
+
+    return resultado.isNotEmpty;
+  }
 }

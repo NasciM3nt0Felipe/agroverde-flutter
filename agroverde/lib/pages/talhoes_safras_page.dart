@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'plantio_page.dart';
 import 'fertilizacao_page.dart';
+import 'pulverizacao_page.dart';
 import '../theme/app_theme.dart';
 import '../domain/entities/talhao.dart';
 import '../domain/entities/safra.dart';
@@ -493,16 +494,32 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
     }
   }
 
-  /// Abre o fluxo de pulverização/controle de pragas.
+  /// Abre a tela de pulverização vinculada à safra selecionada.
   ///
-  /// A futura implementação deverá filtrar itens do estoque pela categoria
-  /// Defensivos e registrar a aplicação vinculada à safra.
-  void _abrirPulverizacao(Safra safra) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Pulverização da safra ${safra.nome} será implementada.'),
-      ),
+  /// A Page apenas navega e atualiza a interface após o retorno.
+  /// A regra de baixa de defensivos e registro em estoque_insumo
+  /// permanece concentrada no EstoqueService.
+  Future<void> _abrirPulverizacao(Safra safra) async {
+    final resultado = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => PulverizacaoPage(safra: safra)),
     );
+
+    if (!mounted) return;
+
+    if (resultado == true) {
+      if (_talhaoSelecionado?.id != null) {
+        await _carregarSafras(_talhaoSelecionado!.id!);
+      }
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Pulverização da safra ${safra.nome} registrada.'),
+        ),
+      );
+    }
   }
 
   /// Abre o fluxo de colheita da safra.
@@ -663,7 +680,7 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
                       Row(
                         children: [
                           Icon(
-                            plantioRealizado ? Icons.check_circle : Icons.spa,
+                            Icons.spa,
                             size: 18,
                             color: plantioRealizado
                                 ? Colors.green
@@ -681,9 +698,7 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
                       Row(
                         children: [
                           Icon(
-                            fertilizacaoRealizada
-                                ? Icons.check_circle
-                                : Icons.science,
+                            Icons.science,
                             size: 18,
                             color: fertilizacaoRealizada
                                 ? Colors.green
@@ -701,9 +716,7 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
                       Row(
                         children: [
                           Icon(
-                            pulverizacaoRealizada
-                                ? Icons.check_circle
-                                : Icons.bug_report,
+                            Icons.bug_report,
                             size: 18,
                             color: pulverizacaoRealizada
                                 ? Colors.green

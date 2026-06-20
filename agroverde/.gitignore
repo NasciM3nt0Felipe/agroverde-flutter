@@ -43,3 +43,14 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+
+.vscode/
+
+# Arquivos compactados
+*.rar
+*.zip
+
+# Backups
+*copy.dart
+*copy 2.dart

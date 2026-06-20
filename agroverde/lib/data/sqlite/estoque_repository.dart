@@ -1,4 +1,5 @@
 import '../../domain/entities/estoque_item.dart';
+import '../../domain/entities/estoque_insumo.dart';
 import 'database_helper.dart';
 
 class EstoqueRepository {
@@ -6,6 +7,12 @@ class EstoqueRepository {
     final db = await DatabaseHelper.database;
 
     return await db.insert('estoque_item', item.toMap());
+  }
+
+  Future<int> inserirConsumoInsumo(EstoqueInsumo consumo) async {
+    final db = await DatabaseHelper.database;
+
+    return await db.insert('estoque_insumo', consumo.toMap());
   }
 
   Future<List<EstoqueItem>> listarPorPropriedadeId(int propriedadeId) async {
@@ -66,7 +73,6 @@ class EstoqueRepository {
     return EstoqueItem.fromMap(maps.first);
   }
 
-  /// NOVO MÉTODO
   Future<EstoqueItem?> buscarPorId(int id) async {
     final db = await DatabaseHelper.database;
 
@@ -93,6 +99,23 @@ class EstoqueRepository {
       where: 'id = ?',
       whereArgs: [item.id],
     );
+  }
+
+  /// Verifica se a safra já possui algum consumo registrado.
+  ///
+  /// Usado no card da safra para indicar visualmente
+  /// se já existe plantio/consumo de insumos vinculado.
+  Future<bool> existeConsumoPorSafra(int safraId) async {
+    final db = await DatabaseHelper.database;
+
+    final resultado = await db.query(
+      'estoque_insumo',
+      where: 'safra_id = ?',
+      whereArgs: [safraId],
+      limit: 1,
+    );
+
+    return resultado.isNotEmpty;
   }
 
   Future<int> excluir(int id) async {

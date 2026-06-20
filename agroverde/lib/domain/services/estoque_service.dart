@@ -1,4 +1,5 @@
 import '../../data/sqlite/estoque_repository.dart';
+import '../entities/estoque_insumo.dart';
 import '../../data/sqlite/financeiro_repository.dart';
 import '../entities/estoque_item.dart';
 import '../entities/lancamento_financeiro.dart';
@@ -79,5 +80,98 @@ class EstoqueService {
 
   Future<void> excluir(int id) async {
     await _repository.excluir(id);
+  }
+
+  /// Consome uma quantidade do estoque.
+  ///
+  /// Utilizado por:
+  /// - Plantio
+  /// - Fertilização
+  /// - Pulverização
+  /// - Vacinação
+  ///
+  /// Valida saldo antes de realizar a baixa.
+  Future<void> consumirEstoque({
+    required int estoqueItemId,
+    required double quantidade,
+  }) async {
+    if (quantidade <= 0) {
+      throw Exception('A quantidade consumida deve ser maior que zero.');
+    }
+
+    final item = await _repository.buscarPorId(estoqueItemId);
+
+    if (item == null) {
+      throw Exception('Item de estoque não encontrado.');
+    }
+
+    if (item.quantidadeAtual < quantidade) {
+      throw Exception(
+        'Estoque insuficiente para ${item.nome}. '
+        'Disponível: ${item.quantidadeAtual} ${item.unidadeMedida}.',
+      );
+    }
+
+    final itemAtualizado = EstoqueItem(
+      id: item.id,
+      propriedadeId: item.propriedadeId,
+      nome: item.nome,
+      categoria: item.categoria,
+      quantidadeInicial: item.quantidadeInicial,
+      quantidadeAtual: item.quantidadeAtual - quantidade,
+      unidadeMedida: item.unidadeMedida,
+      precoMedioUnitario: item.precoMedioUnitario,
+      estoqueMinimo: item.estoqueMinimo,
+      fornecedor: item.fornecedor,
+      observacao: item.observacao,
+    );
+
+    await _repository.atualizar(itemAtualizado);
+  }
+
+  /// Registra o consumo de um insumo em uma safra.
+  ///
+  /// Utilizado por:
+  /// - Plantio
+  /// - Fertilização
+  /// - Pulverização
+  Future<void> registrarConsumoSafra({
+    required int safraId,
+    required int estoqueItemId,
+    required double quantidade,
+    String? observacao,
+  }) async {
+    if (quantidade <= 0) {
+      throw Exception('A quantidade utilizada deve ser maior que zero.');
+    }
+
+    final item = await _repository.buscarPorId(estoqueItemId);
+
+    if (item == null) {
+      throw Exception('Item de estoque não encontrado.');
+    }
+
+    if (item.quantidadeAtual < quantidade) {
+      throw Exception('Estoque insuficiente para ${item.nome}.');
+    }
+
+    await consumirEstoque(estoqueItemId: estoqueItemId, quantidade: quantidade);
+
+    final valorTotal = quantidade * item.precoMedioUnitario;
+
+    final consumo = EstoqueInsumo(
+      safraId: safraId,
+      estoqueItemId: estoqueItemId,
+      quantidadeUtilizada: quantidade,
+      valorTotal: valorTotal,
+      dataMovimentacao: DateTime.now().toIso8601String(),
+      observacao: observacao,
+    );
+
+    await _repository.inserirConsumoInsumo(consumo);
+  }
+
+  Future<bool> existeConsumoPorSafra(int safraId) async {
+    return await _repository.existeConsumoPorSafra(safraId);
   }
 }

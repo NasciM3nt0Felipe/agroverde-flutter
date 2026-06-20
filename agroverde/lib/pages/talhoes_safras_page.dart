@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 
+import 'plantio_page.dart';
+import '../theme/app_theme.dart';
 import '../domain/entities/talhao.dart';
 import '../domain/entities/safra.dart';
 import '../domain/services/sessao_service.dart';
 import '../domain/services/talhao_service.dart';
 import '../domain/services/safra_service.dart';
+import '../domain/services/estoque_service.dart';
 
 class TalhoesSafrasPage extends StatefulWidget {
   const TalhoesSafrasPage({super.key});
@@ -18,6 +21,7 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
 
   final TalhaoService _talhaoService = TalhaoService();
   final SafraService _safraService = SafraService();
+  final EstoqueService _estoqueService = EstoqueService();
 
   final TextEditingController _nomeController = TextEditingController();
   final TextEditingController _areaController = TextEditingController();
@@ -392,16 +396,42 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
     return _talhaoSelecionado?.id == talhao.id;
   }
 
-  /// Abre o fluxo de plantio da safra.
+  /// Verifica se a safra possui consumo de insumos registrado.
   ///
-  /// Neste primeiro momento o botão apenas prepara a navegação/ação visual.
-  /// A regra de baixa de sementes no estoque será tratada no EstoqueService.
-  void _abrirPlantio(Safra safra) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Plantio da safra ${safra.nome} será implementado.'),
-      ),
+  /// Nesta fase, usamos qualquer registro em estoque_insumo
+  /// como indicação visual de que o plantio/consumo já ocorreu.
+  Future<bool> _plantioRealizado(Safra safra) async {
+    if (safra.id == null) {
+      return false;
+    }
+
+    return await _estoqueService.existeConsumoPorSafra(safra.id!);
+  }
+
+  /// Abre a tela de plantio vinculada à safra selecionada.
+  ///
+  /// A Page apenas navega e atualiza a interface após o retorno.
+  /// A regra de baixa de sementes e registro em estoque_insumo
+  /// permanece concentrada no EstoqueService.
+  Future<void> _abrirPlantio(Safra safra) async {
+    final resultado = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => PlantioPage(safra: safra)),
     );
+
+    if (!mounted) return;
+
+    if (resultado == true) {
+      if (_talhaoSelecionado?.id != null) {
+        await _carregarSafras(_talhaoSelecionado!.id!);
+      }
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Plantio da safra ${safra.nome} registrado.')),
+      );
+    }
   }
 
   /// Abre o fluxo de fertilização da safra.
@@ -463,7 +493,7 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
         ),
         child: Row(
           children: [
-            Icon(icone, color: const Color(0xFF064E2F)),
+            Icon(icone, color: AppTheme.primaryGreen),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
@@ -500,7 +530,7 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.grass, color: Color(0xFF064E2F)),
+                const Icon(Icons.grass, color: AppTheme.primaryGreen),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -552,6 +582,84 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
                 ),
               ],
             ),
+            const SizedBox(height: 12),
+
+            FutureBuilder<bool>(
+              future: _plantioRealizado(safra),
+              builder: (context, snapshot) {
+                final plantioRealizado = snapshot.data ?? false;
+
+                return Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.green.shade200),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Resumo Operacional',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(
+                            plantioRealizado ? Icons.check_circle : Icons.spa,
+                            size: 18,
+                            color: plantioRealizado
+                                ? Colors.green
+                                : Colors.orange,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            plantioRealizado
+                                ? 'Plantio: Realizado'
+                                : 'Plantio: Pendente',
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      const Row(
+                        children: [
+                          Icon(Icons.science, size: 18, color: Colors.orange),
+                          SizedBox(width: 8),
+                          Text('Fertilização: Pendente'),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      const Row(
+                        children: [
+                          Icon(
+                            Icons.bug_report,
+                            size: 18,
+                            color: Colors.orange,
+                          ),
+                          SizedBox(width: 8),
+                          Text('Pulverização: Pendente'),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      const Row(
+                        children: [
+                          Icon(
+                            Icons.agriculture,
+                            size: 18,
+                            color: Colors.orange,
+                          ),
+                          SizedBox(width: 8),
+                          Text('Colheita: Pendente'),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+
             const SizedBox(height: 16),
             const Divider(),
             const SizedBox(height: 12),
@@ -802,7 +910,7 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
                                       : Icons.agriculture,
                                   color: selecionado
                                       ? Colors.green
-                                      : const Color(0xFF064E2F),
+                                      : AppTheme.primaryGreen,
                                 ),
                                 title: Text(talhao.nome),
                                 subtitle: Text(
@@ -818,7 +926,7 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
                                       },
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: selecionado
-                                            ? const Color(0xFF064E2F)
+                                            ? AppTheme.primaryGreen
                                             : null,
                                         foregroundColor: selecionado
                                             ? Colors.white

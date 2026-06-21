@@ -14,6 +14,9 @@ import 'pages/pesagem_page.dart';
 import 'pages/vacinacao_page.dart';
 import 'pages/sanitario_page.dart';
 import 'pages/reproducao_page.dart';
+import 'pages/colheita_page.dart';
+import 'pages/funcionario_page.dart';
+import 'pages/veiculo_page.dart';
 
 class AppRoutes {
   static const String home = '/';
@@ -30,6 +33,9 @@ class AppRoutes {
   static const String vacinacao = '/vacinacao';
   static const String sanitario = '/sanitario';
   static const String reproducao = '/reproducao';
+  static const String colheita = '/colheita';
+  static const String funcionarios = '/funcionarios';
+  static const String veiculos = '/veiculos';
 
   static Map<String, WidgetBuilder> routes = {
     home: (context) => const HomePage(),
@@ -46,5 +52,8 @@ class AppRoutes {
     vacinacao: (context) => const VacinacaoPage(),
     sanitario: (context) => const SanitarioPage(),
     reproducao: (context) => const ReproducaoPage(),
+    colheita: (context) => const ColheitaPage(),
+    AppRoutes.funcionarios: (context) => const FuncionarioPage(),
+    AppRoutes.veiculos: (context) => const VeiculoPage(),
   };
 }

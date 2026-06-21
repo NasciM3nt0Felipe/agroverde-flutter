@@ -1,6 +1,6 @@
 class Pessoa {
   int? id;
-  int usuarioId;
+  int? usuarioId;
   String? nome;
   String? cpf;
   String? telefone;
@@ -13,7 +13,7 @@ class Pessoa {
 
   Pessoa({
     this.id,
-    required this.usuarioId,
+    this.usuarioId,
     this.nome,
     this.cpf,
     this.telefone,

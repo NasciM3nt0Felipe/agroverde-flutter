@@ -273,9 +273,27 @@ class _DashboardPageState extends State<DashboardPage> {
                       runSpacing: 16,
                       children: [
                         _QuickAccessCard(
+                          titulo: 'Funcionários',
+                          subtitulo: 'Equipe e responsáveis',
+                          rota: AppRoutes.funcionarios,
+                          abrirRota: _abrirRota,
+                        ),
+                        _QuickAccessCard(
+                          titulo: 'Veículos',
+                          subtitulo: 'Máquinas e equipamentos',
+                          rota: AppRoutes.veiculos,
+                          abrirRota: _abrirRota,
+                        ),
+                        _QuickAccessCard(
                           titulo: 'Talhões e Safras',
                           subtitulo: 'Gerencie áreas e culturas',
                           rota: AppRoutes.talhoesSafras,
+                          abrirRota: _abrirRota,
+                        ),
+                        _QuickAccessCard(
+                          titulo: 'Colheita',
+                          subtitulo: 'Produção agrícola',
+                          rota: AppRoutes.colheita,
                           abrirRota: _abrirRota,
                         ),
                         _QuickAccessCard(
@@ -459,9 +477,24 @@ class _AppDrawer extends StatelessWidget {
                   onTap: () => _navegar(context, AppRoutes.propriedades),
                 ),
                 ListTile(
+                  leading: const Icon(Icons.groups),
+                  title: const Text('Funcionários'),
+                  onTap: () => _navegar(context, AppRoutes.funcionarios),
+                ),
+                ListTile(
                   leading: const Icon(Icons.agriculture),
+                  title: const Text('Veículos'),
+                  onTap: () => _navegar(context, AppRoutes.veiculos),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.eco),
                   title: const Text('Talhões e Safras'),
                   onTap: () => _navegar(context, AppRoutes.talhoesSafras),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.grass),
+                  title: const Text('Colheita'),
+                  onTap: () => _navegar(context, AppRoutes.colheita),
                 ),
                 ListTile(
                   leading: const Icon(Icons.inventory),

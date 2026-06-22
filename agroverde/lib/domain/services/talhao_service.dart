@@ -6,17 +6,31 @@ class TalhaoService {
   final TalhaoRepository _repository = TalhaoRepository();
   final PropriedadeRepository _propriedadeRepository = PropriedadeRepository();
 
+  /// Percentual máximo da área da propriedade que pode ser usado por talhões.
+  ///
+  /// Exemplo:
+  /// Propriedade com 100 ha -> máximo para talhões = 90 ha.
+  /// Os 10% restantes ficam reservados para casa, galpão, estrada, curral etc.
+  static const double percentualAreaCultivavel = 0.90;
+
   Future<List<Talhao>> listarPorPropriedadeId(int propriedadeId) async {
     return await _repository.listarPorPropriedadeId(propriedadeId);
   }
 
-  Future<void> salvar(Talhao talhao) async {
-    if (talhao.nome.trim().isEmpty) {
-      throw Exception('Informe o nome do talhão.');
+  /// Salva um talhão novo ou atualiza um existente.
+  ///
+  /// Retorno:
+  /// - null: salvou com sucesso.
+  /// - String: houve erro de validação/regra de negócio.
+  Future<String?> salvar(Talhao talhao) async {
+    final nome = talhao.nome.trim();
+
+    if (nome.isEmpty) {
+      return 'Informe o nome do talhão.';
     }
 
     if (talhao.area <= 0) {
-      throw Exception('Informe uma área válida.');
+      return 'Informe uma área válida.';
     }
 
     final propriedade = await _propriedadeRepository.buscarPorId(
@@ -24,7 +38,7 @@ class TalhaoService {
     );
 
     if (propriedade == null) {
-      throw Exception('Propriedade não encontrada.');
+      return 'Propriedade não encontrada.';
     }
 
     final talhoes = await _repository.listarPorPropriedadeId(
@@ -34,22 +48,30 @@ class TalhaoService {
     double areaJaUtilizada = 0;
 
     for (final item in talhoes) {
-      if (talhao.id != null && item.id == talhao.id) {
+      final mesmoTalhao = talhao.id != null && item.id == talhao.id;
+
+      if (mesmoTalhao) {
         continue;
       }
 
       areaJaUtilizada += item.area;
     }
 
-    final areaTotalAposSalvar = areaJaUtilizada + talhao.area;
+    final double areaMaximaCultivavel =
+        propriedade.areaTotal * percentualAreaCultivavel;
 
-    if (areaTotalAposSalvar > propriedade.areaTotal) {
-      final areaDisponivel = propriedade.areaTotal - areaJaUtilizada;
+    final double areaDisponivel = areaMaximaCultivavel - areaJaUtilizada;
 
-      throw Exception(
-        'Área excedida. Disponível para novos talhões: '
-        '${areaDisponivel.toStringAsFixed(2)} ha.',
-      );
+    final double areaDisponivelTratada = areaDisponivel < 0
+        ? 0.0
+        : areaDisponivel;
+
+    final double areaTotalAposSalvar = areaJaUtilizada + talhao.area;
+
+    if (areaTotalAposSalvar > areaMaximaCultivavel) {
+      return 'Área excedida. A propriedade mantém 10% como reserva técnica. '
+          'Área máxima para talhões: ${_formatarArea(areaMaximaCultivavel)} ha. '
+          'Disponível para novos talhões: ${_formatarArea(areaDisponivelTratada)} ha.';
     }
 
     if (talhao.id == null) {
@@ -57,9 +79,19 @@ class TalhaoService {
     } else {
       await _repository.atualizar(talhao);
     }
+
+    return null;
   }
 
   Future<void> excluir(int id) async {
     await _repository.excluir(id);
+  }
+
+  String _formatarArea(double valor) {
+    if (valor % 1 == 0) {
+      return valor.toStringAsFixed(0);
+    }
+
+    return valor.toStringAsFixed(2).replaceAll('.', ',');
   }
 }

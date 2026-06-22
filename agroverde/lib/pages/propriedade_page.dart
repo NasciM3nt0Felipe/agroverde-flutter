@@ -118,9 +118,9 @@ class _PropriedadePageState extends State<PropriedadePage> {
 
     if (!mounted) return;
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Colhendo em: ${propriedade.nome}')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Propriedade ativa: ${propriedade.nome}')),
+    );
 
     Navigator.pushNamedAndRemoveUntil(
       context,
@@ -178,7 +178,11 @@ class _PropriedadePageState extends State<PropriedadePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Propriedades')),
+      appBar: AppBar(
+        title: const Text('Propriedades'),
+        backgroundColor: const Color(0xFF064E2F),
+        foregroundColor: Colors.white,
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Center(
@@ -378,7 +382,7 @@ class _PropriedadePageState extends State<PropriedadePage> {
                                         foregroundColor: Colors.white,
                                       ),
                                       child: Text(
-                                        selecionada ? 'Colhendo' : 'Cultivando',
+                                        selecionada ? 'Ativa' : 'Em Espera',
                                       ),
                                     ),
 

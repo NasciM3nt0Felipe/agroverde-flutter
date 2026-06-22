@@ -33,6 +33,44 @@ class SafraRepository {
     return maps.map((map) => Safra.fromMap(map)).toList();
   }
 
+  /// Lista as safras que já podem ser colhidas.
+  ///
+  /// Critérios:
+  /// - possuem data de colheita prevista menor ou igual à data atual;
+  /// - ainda não estão com status Colhida ou Finalizada.
+  Future<List<Safra>> listarDisponiveisParaColheitaPorPropriedade(
+    int propriedadeId,
+  ) async {
+    final db = await DatabaseHelper.database;
+
+    final hoje = DateTime.now().toIso8601String().substring(0, 10);
+
+    final maps = await db.rawQuery(
+      '''
+    SELECT s.*
+    FROM safra s
+    INNER JOIN talhao t ON t.id = s.talhao_id
+    WHERE t.propriedade_id = ?
+      AND s.data_colheita_prevista IS NOT NULL
+      AND s.data_colheita_prevista != ''
+      AND (
+        substr(s.data_colheita_prevista, 7, 4) || '-' ||
+        substr(s.data_colheita_prevista, 4, 2) || '-' ||
+        substr(s.data_colheita_prevista, 1, 2)
+      ) <= ?
+      AND s.status NOT IN (?, ?)
+    ORDER BY (
+      substr(s.data_colheita_prevista, 7, 4) || '-' ||
+      substr(s.data_colheita_prevista, 4, 2) || '-' ||
+      substr(s.data_colheita_prevista, 1, 2)
+    ) ASC
+    ''',
+      [propriedadeId, hoje, 'Colhida', 'Finalizada'],
+    );
+
+    return maps.map((map) => Safra.fromMap(map)).toList();
+  }
+
   /// Verifica se já existe uma safra ativa no talhão.
   ///
   /// Status considerados ativos:
@@ -84,5 +122,20 @@ class SafraRepository {
     final db = await DatabaseHelper.database;
 
     return await db.delete('safra', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<Safra?> buscarPorId(int id) async {
+    final db = await DatabaseHelper.database;
+
+    final maps = await db.query(
+      'safra',
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
+
+    if (maps.isEmpty) return null;
+
+    return Safra.fromMap(maps.first);
   }
 }

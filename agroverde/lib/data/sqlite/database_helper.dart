@@ -21,7 +21,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 5,
+      version: 6,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -118,6 +118,57 @@ class DatabaseHelper {
         FOREIGN KEY(talhao_id) REFERENCES talhao(id)
       )
     ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS colheita (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        safra_id INTEGER NOT NULL,
+        propriedade_id INTEGER NOT NULL,
+        data_colheita TEXT NOT NULL,
+        quantidade_produzida REAL NOT NULL,
+        unidade TEXT NOT NULL,
+        observacao TEXT,
+
+        FOREIGN KEY(safra_id) REFERENCES safra(id),
+        FOREIGN KEY(propriedade_id) REFERENCES propriedade(id)
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS armazenamento_grao (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        colheita_id INTEGER NOT NULL,
+        propriedade_id INTEGER NOT NULL,
+        produto TEXT NOT NULL,
+        quantidade_total REAL NOT NULL,
+        quantidade_disponivel REAL NOT NULL,
+        unidade TEXT NOT NULL,
+        status TEXT NOT NULL,
+
+        FOREIGN KEY(colheita_id) REFERENCES colheita(id),
+        FOREIGN KEY(propriedade_id) REFERENCES propriedade(id)
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS venda_grao (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        armazenamento_id INTEGER NOT NULL,
+        propriedade_id INTEGER NOT NULL,
+        data_venda TEXT NOT NULL,
+        comprador TEXT,
+        quantidade_vendida REAL NOT NULL,
+        valor_unitario REAL NOT NULL,
+        valor_total REAL NOT NULL,
+        unidade TEXT NOT NULL,
+        observacao TEXT,
+
+        FOREIGN KEY(armazenamento_id)
+          REFERENCES armazenamento_grao(id),
+        FOREIGN KEY(propriedade_id)
+          REFERENCES propriedade(id)
+      )
+    ''');
   }
 
   static Future<void> _onUpgrade(
@@ -198,6 +249,59 @@ class DatabaseHelper {
 
           FOREIGN KEY(pessoa_id) REFERENCES pessoa(id),
           FOREIGN KEY(propriedade_id) REFERENCES propriedade(id)
+        )
+      ''');
+    }
+
+    if (oldVersion < 6) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS colheita (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          safra_id INTEGER NOT NULL,
+          propriedade_id INTEGER NOT NULL,
+          data_colheita TEXT NOT NULL,
+          quantidade_produzida REAL NOT NULL,
+          unidade TEXT NOT NULL,
+          observacao TEXT,
+
+          FOREIGN KEY(safra_id) REFERENCES safra(id),
+          FOREIGN KEY(propriedade_id) REFERENCES propriedade(id)
+        )
+      ''');
+
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS armazenamento_grao (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          colheita_id INTEGER NOT NULL,
+          propriedade_id INTEGER NOT NULL,
+          produto TEXT NOT NULL,
+          quantidade_total REAL NOT NULL,
+          quantidade_disponivel REAL NOT NULL,
+          unidade TEXT NOT NULL,
+          status TEXT NOT NULL,
+
+          FOREIGN KEY(colheita_id) REFERENCES colheita(id),
+          FOREIGN KEY(propriedade_id) REFERENCES propriedade(id)
+        )
+      ''');
+
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS venda_grao (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          armazenamento_id INTEGER NOT NULL,
+          propriedade_id INTEGER NOT NULL,
+          data_venda TEXT NOT NULL,
+          comprador TEXT,
+          quantidade_vendida REAL NOT NULL,
+          valor_unitario REAL NOT NULL,
+          valor_total REAL NOT NULL,
+          unidade TEXT NOT NULL,
+          observacao TEXT,
+
+          FOREIGN KEY(armazenamento_id)
+            REFERENCES armazenamento_grao(id),
+          FOREIGN KEY(propriedade_id)
+            REFERENCES propriedade(id)
         )
       ''');
     }

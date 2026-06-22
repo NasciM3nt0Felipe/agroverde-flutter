@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-
 // Bibliotecas adicionadas para realizar a consulta do CEP na API ViaCEP.
 // dart:convert converte o retorno JSON.
 // http permite fazer a requisição pela internet.
@@ -27,7 +26,6 @@ class _PessoaPageState extends State<PessoaPage> {
   // Controla se os campos podem ser editados.
   bool _modoEdicao = true;
 
-  
   // Controla o indicador de carregamento enquanto o CEP está sendo consultado.
   bool _buscandoCep = false;
 
@@ -63,7 +61,6 @@ class _PessoaPageState extends State<PessoaPage> {
     _estadoController.dispose();
     super.dispose();
   }
-
 
   // Função responsável por buscar o endereço automaticamente
   // através do CEP informado pelo usuário.
@@ -107,11 +104,9 @@ class _PessoaPageState extends State<PessoaPage> {
         if (dados['erro'] == true) {
           if (!mounted) return;
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('CEP não encontrado.'),
-            ),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('CEP não encontrado.')));
 
           return;
         }
@@ -229,7 +224,9 @@ class _PessoaPageState extends State<PessoaPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Perfil do Usuário'),
+        title: const Text('Meus dados'),
+        backgroundColor: const Color(0xFF064E2F),
+        foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -353,8 +350,10 @@ class _PessoaPageState extends State<PessoaPage> {
                         // Evento executado toda vez que o usuário digita no campo CEP.
                         onChanged: (value) {
                           // Remove caracteres que não são números.
-                          final cepLimpo =
-                              value.replaceAll(RegExp(r'[^0-9]'), '');
+                          final cepLimpo = value.replaceAll(
+                            RegExp(r'[^0-9]'),
+                            '',
+                          );
 
                           // Quando o CEP tiver 8 dígitos, realiza a busca.
                           if (cepLimpo.length == 8) {
@@ -424,13 +423,14 @@ class _PessoaPageState extends State<PessoaPage> {
                         width: double.infinity,
                         height: 50,
                         child: ElevatedButton(
-                          onPressed:
-                              _modoEdicao ? _salvarPerfil : _habilitarEdicao,
+                          onPressed: _modoEdicao
+                              ? _salvarPerfil
+                              : _habilitarEdicao,
                           child: Text(
                             _modoEdicao
                                 ? (_pessoaAtual == null
-                                    ? 'Salvar Perfil'
-                                    : 'Salvar Alterações')
+                                      ? 'Salvar Perfil'
+                                      : 'Salvar Alterações')
                                 : 'Editar Perfil',
                           ),
                         ),

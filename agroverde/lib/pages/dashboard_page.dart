@@ -75,7 +75,14 @@ class _DashboardPageState extends State<DashboardPage> {
 
     for (final talhao in talhoes) {
       final safras = await _safraRepository.listarPorTalhaoId(talhao.id!);
-      totalSafras += safras.length;
+
+      final safrasEmExecucao = safras.where((safra) {
+        final status = safra.status.toLowerCase();
+
+        return status == 'planejada' || status == 'em andamento';
+      }).length;
+
+      totalSafras += safrasEmExecucao;
     }
 
     final animais = await _rebanhoRepository.listarPorPropriedadeId(

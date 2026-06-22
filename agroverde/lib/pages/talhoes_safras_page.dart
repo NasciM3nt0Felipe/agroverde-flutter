@@ -157,43 +157,43 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
       id: _talhaoEditandoId,
       propriedadeId: propriedadeId,
       nome: _nomeController.text.trim(),
-      area: double.parse(_areaController.text.replaceAll(',', '.')),
+      area: double.parse(_areaController.text.trim()),
       tipoSolo: _tipoSoloController.text.trim(),
       observacao: _observacaoController.text.trim(),
       ativo: true,
     );
 
-    try {
-      await _talhaoService.salvar(talhao);
+    final erro = await _talhaoService.salvar(talhao);
 
-      await _carregarTalhoes();
-
+    if (erro != null) {
       if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            _editando
-                ? 'Talhão atualizado com sucesso!'
-                : 'Talhão cadastrado com sucesso!',
-          ),
-        ),
-      );
-
-      _cancelarFormulario();
-    } catch (e) {
-      if (!mounted) return;
-
-      final mensagem = e.toString().replaceAll('Exception: ', '');
 
       setState(() {
-        _erroAreaTalhao = mensagem;
+        _erroAreaTalhao = erro;
       });
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(mensagem)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(backgroundColor: Colors.red, content: Text(erro)),
+      );
+
+      return;
     }
+
+    await _carregarTalhoes();
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          _editando
+              ? 'Talhão atualizado com sucesso!'
+              : 'Talhão cadastrado com sucesso!',
+        ),
+      ),
+    );
+
+    _cancelarFormulario();
   }
 
   Future<void> _salvarSafra() async {
@@ -725,88 +725,124 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
             ),
             const SizedBox(height: 12),
 
-            FutureBuilder<List<Map<String, dynamic>?>>(
-              future: Future.wait([
-                _plantioResumo(safra),
-                _fertilizacaoResumo(safra),
-                _pulverizacaoResumo(safra),
-              ]),
-              builder: (context, snapshot) {
-                final dados = snapshot.data ?? [null, null, null];
+            ExpansionTile(
+              initiallyExpanded: false,
+              tilePadding: EdgeInsets.zero,
+              childrenPadding: EdgeInsets.zero,
+              leading: const Icon(
+                Icons.summarize,
+                color: AppTheme.primaryGreen,
+              ),
+              title: const Text(
+                'Resumo Operacional',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: const Text('Clique para expandir'),
+              children: [
+                FutureBuilder<List<Map<String, dynamic>?>>(
+                  future: Future.wait([
+                    _plantioResumo(safra),
+                    _fertilizacaoResumo(safra),
+                    _pulverizacaoResumo(safra),
+                  ]),
+                  builder: (context, snapshot) {
+                    final dados = snapshot.data ?? [null, null, null];
 
-                final plantio = dados[0];
-                final fertilizacao = dados[1];
-                final pulverizacao = dados[2];
+                    final plantio = dados[0];
+                    final fertilizacao = dados[1];
+                    final pulverizacao = dados[2];
 
-                return Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.green.shade200),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Resumo Operacional',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                    return Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(top: 8, bottom: 12),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.green.shade200),
                       ),
-                      const SizedBox(height: 8),
-                      _linhaResumoOperacional(
-                        icone: Icons.spa,
-                        titulo: 'Plantio',
-                        dados: plantio,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _linhaResumoOperacional(
+                            icone: Icons.spa,
+                            titulo: 'Plantio',
+                            dados: plantio,
+                          ),
+                          _linhaResumoOperacional(
+                            icone: Icons.science,
+                            titulo: 'Fertilização',
+                            dados: fertilizacao,
+                          ),
+                          _linhaResumoOperacional(
+                            icone: Icons.bug_report,
+                            titulo: 'Pulverização',
+                            dados: pulverizacao,
+                          ),
+                        ],
                       ),
-                      _linhaResumoOperacional(
-                        icone: Icons.science,
-                        titulo: 'Fertilização',
-                        dados: fertilizacao,
-                      ),
-                      _linhaResumoOperacional(
-                        icone: Icons.bug_report,
-                        titulo: 'Pulverização',
-                        dados: pulverizacao,
-                      ),
-                    ],
-                  ),
-                );
-              },
+                    );
+                  },
+                ),
+              ],
             ),
 
             const SizedBox(height: 16),
             const Divider(),
             const SizedBox(height: 12),
-            const Text(
-              'Ações da safra',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                _botaoAcaoSafra(
-                  icone: Icons.spa,
-                  titulo: 'Plantio',
-                  subtitulo: 'Registrar sementes',
-                  onTap: () => _abrirPlantio(safra),
+            if (safra.status == 'Colhida' || safra.status == 'Finalizada')
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
                 ),
-                _botaoAcaoSafra(
-                  icone: Icons.science,
-                  titulo: 'Fertilização',
-                  subtitulo: 'Aplicar fertilizantes',
-                  onTap: () => _abrirFertilizacao(safra),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green.shade200),
                 ),
-                _botaoAcaoSafra(
-                  icone: Icons.bug_report,
-                  titulo: 'Pulverização',
-                  subtitulo: 'Controle de pragas',
-                  onTap: () => _abrirPulverizacao(safra),
+                child: const Row(
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.green),
+                    SizedBox(width: 8),
+                    Text(
+                      'Safra colhida. As ações operacionais foram encerradas.',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              )
+            else ...[
+              const Text(
+                'Ações da safra',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  _botaoAcaoSafra(
+                    icone: Icons.spa,
+                    titulo: 'Plantio',
+                    subtitulo: 'Registrar sementes',
+                    onTap: () => _abrirPlantio(safra),
+                  ),
+                  _botaoAcaoSafra(
+                    icone: Icons.science,
+                    titulo: 'Fertilização',
+                    subtitulo: 'Aplicar fertilizantes',
+                    onTap: () => _abrirFertilizacao(safra),
+                  ),
+                  _botaoAcaoSafra(
+                    icone: Icons.bug_report,
+                    titulo: 'Pulverização',
+                    subtitulo: 'Controle de pragas',
+                    onTap: () => _abrirPulverizacao(safra),
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       ),
@@ -818,7 +854,11 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
     final propriedadeNome = SessaoService.propriedadeNome;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Talhões e Safras')),
+      appBar: AppBar(
+        title: const Text('Produção'),
+        backgroundColor: const Color(0xFF064E2F),
+        foregroundColor: Colors.white,
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Center(
@@ -890,13 +930,44 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
 
                             const SizedBox(height: 16),
 
+                            if (_erroAreaTalhao != null) ...[
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(12),
+                                margin: const EdgeInsets.only(bottom: 12),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.shade50,
+                                  border: Border.all(color: Colors.red),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Icon(
+                                      Icons.warning_amber_rounded,
+                                      color: Colors.red,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        _erroAreaTalhao!,
+                                        style: const TextStyle(
+                                          color: Colors.red,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+
                             TextFormField(
                               controller: _areaController,
                               keyboardType: TextInputType.number,
                               decoration: InputDecoration(
                                 labelText: 'Área do talhão (hectares)',
                                 prefixIcon: const Icon(Icons.square_foot),
-                                errorText: _erroAreaTalhao,
                               ),
                               onChanged: (_) {
                                 if (_erroAreaTalhao != null) {
@@ -910,9 +981,11 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
                                   return 'Informe a área do talhão';
                                 }
 
-                                final area = double.tryParse(
-                                  value.replaceAll(',', '.'),
-                                );
+                                if (value.contains(',')) {
+                                  return 'Use apenas números inteiros, sem vírgula.';
+                                }
+
+                                final area = double.tryParse(value.trim());
 
                                 if (area == null || area <= 0) {
                                   return 'Informe uma área válida';
@@ -1223,7 +1296,7 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
                               controller: _producaoEstimadaController,
                               keyboardType: TextInputType.number,
                               decoration: const InputDecoration(
-                                labelText: 'Produção estimada',
+                                labelText: 'Produção estimada Sacas',
                                 prefixIcon: Icon(Icons.bar_chart),
                               ),
                             ),
@@ -1244,10 +1317,6 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
                                 DropdownMenuItem(
                                   value: 'Em andamento',
                                   child: Text('Em andamento'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'Colhida',
-                                  child: Text('Colhida'),
                                 ),
                                 DropdownMenuItem(
                                   value: 'Cancelada',

@@ -288,7 +288,11 @@ class _EstoquePageState extends State<EstoquePage> {
     final propriedadeNome = SessaoService.propriedadeNome;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Estoque')),
+      appBar: AppBar(
+        title: const Text('Estoque'),
+        backgroundColor: const Color(0xFF064E2F),
+        foregroundColor: Colors.white,
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Center(

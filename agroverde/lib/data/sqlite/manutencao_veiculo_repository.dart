@@ -1,13 +1,16 @@
 import '../../domain/entities/manutencao_veiculo.dart';
 import 'database_helper.dart';
 
+/// Responsável pelas operações de manutenção de veículos.
 class ManutencaoVeiculoRepository {
+  /// Insere uma nova manutenção.
   Future<int> inserir(ManutencaoVeiculo manutencao) async {
     final db = await DatabaseHelper.database;
 
     return await db.insert('manutencao_veiculo', manutencao.toMap());
   }
 
+  /// Atualiza os dados da manutenção.
   Future<int> atualizar(ManutencaoVeiculo manutencao) async {
     final db = await DatabaseHelper.database;
 
@@ -19,6 +22,7 @@ class ManutencaoVeiculoRepository {
     );
   }
 
+  /// Remove uma manutenção.
   Future<int> excluir(int id) async {
     final db = await DatabaseHelper.database;
 
@@ -29,6 +33,7 @@ class ManutencaoVeiculoRepository {
     );
   }
 
+  /// Busca uma manutenção pelo ID.
   Future<ManutencaoVeiculo?> buscarPorId(int id) async {
     final db = await DatabaseHelper.database;
 
@@ -46,6 +51,7 @@ class ManutencaoVeiculoRepository {
     return ManutencaoVeiculo.fromMap(resultado.first);
   }
 
+  /// Lista as manutenções do veículo.
   Future<List<ManutencaoVeiculo>> listarPorVeiculoId(int veiculoId) async {
     final db = await DatabaseHelper.database;
 
@@ -59,6 +65,7 @@ class ManutencaoVeiculoRepository {
     return resultado.map((e) => ManutencaoVeiculo.fromMap(e)).toList();
   }
 
+  /// Calcula o total gasto com manutenção.
   Future<double> totalGastoVeiculo(int veiculoId) async {
     final db = await DatabaseHelper.database;
 
@@ -74,6 +81,7 @@ class ManutencaoVeiculoRepository {
     return (resultado.first['total'] as num?)?.toDouble() ?? 0;
   }
 
+  /// Retorna a quantidade de manutenções registradas.
   Future<int> quantidadeManutencoes(int veiculoId) async {
     final db = await DatabaseHelper.database;
 

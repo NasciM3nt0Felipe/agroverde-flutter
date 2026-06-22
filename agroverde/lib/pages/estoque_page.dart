@@ -87,6 +87,7 @@ class _EstoquePageState extends State<EstoquePage> {
     super.dispose();
   }
 
+  /// Carrega os itens de estoque da propriedade.
   Future<void> _carregarEstoque() async {
     final propriedadeId = SessaoService.propriedadeId;
 
@@ -101,6 +102,7 @@ class _EstoquePageState extends State<EstoquePage> {
     });
   }
 
+  /// Aplica os filtros de categoria e pesquisa.
   List<EstoqueItem> get _itensFiltrados {
     if (_categoriaFiltro == null) {
       return [];
@@ -113,6 +115,7 @@ class _EstoquePageState extends State<EstoquePage> {
     );
   }
 
+  /// Carrega os itens da categoria selecionada.
   Future<void> _selecionarCategoriaFiltro(String? categoria) async {
     setState(() {
       _categoriaFiltro = categoria;
@@ -128,6 +131,7 @@ class _EstoquePageState extends State<EstoquePage> {
     });
   }
 
+  /// Salva ou atualiza um item de estoque.
   Future<void> _salvarItem() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -215,6 +219,7 @@ class _EstoquePageState extends State<EstoquePage> {
     });
   }
 
+  /// Preenche o formulário para edição do item.
   void _editarItem(EstoqueItem item) {
     _nomeController.text = item.nome;
     _quantidadeInicialController.text = item.quantidadeInicial.toString();

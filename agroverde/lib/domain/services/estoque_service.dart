@@ -4,14 +4,17 @@ import '../../data/sqlite/financeiro_repository.dart';
 import '../entities/estoque_item.dart';
 import '../entities/lancamento_financeiro.dart';
 
+/// Responsável pelas regras de negócio do estoque.
 class EstoqueService {
   final EstoqueRepository _repository = EstoqueRepository();
   final FinanceiroRepository _financeiroRepository = FinanceiroRepository();
 
+  /// Lista os itens da propriedade.
   Future<List<EstoqueItem>> listarPorPropriedadeId(int propriedadeId) async {
     return await _repository.listarPorPropriedadeId(propriedadeId);
   }
 
+  /// Filtra itens por categoria e descrição.
   List<EstoqueItem> filtrarItens({
     required List<EstoqueItem> itens,
     required String categoria,
@@ -31,6 +34,7 @@ class EstoqueService {
     }).toList();
   }
 
+  /// Salva um item e registra a compra no financeiro.
   Future<void> salvar(EstoqueItem item) async {
     if (item.nome.trim().isEmpty) {
       throw Exception('Informe o nome do item.');
@@ -78,6 +82,7 @@ class EstoqueService {
     }
   }
 
+  /// Remove um item do estoque.
   Future<void> excluir(int id) async {
     await _repository.excluir(id);
   }
@@ -89,8 +94,6 @@ class EstoqueService {
   /// - Fertilização
   /// - Pulverização
   /// - Vacinação
-  ///
-  /// Valida saldo antes de realizar a baixa.
   Future<void> consumirEstoque({
     required int estoqueItemId,
     required double quantidade,
@@ -129,7 +132,7 @@ class EstoqueService {
     await _repository.atualizar(itemAtualizado);
   }
 
-  /// Registra o consumo de um insumo em uma safra.
+  /// Registra o consumo de insumos em uma safra.
   ///
   /// Utilizado por:
   /// - Plantio
@@ -171,10 +174,12 @@ class EstoqueService {
     await _repository.inserirConsumoInsumo(consumo);
   }
 
+  /// Verifica se a safra possui consumo registrado.
   Future<bool> existeConsumoPorSafra(int safraId) async {
     return await _repository.existeConsumoPorSafra(safraId);
   }
 
+  /// Verifica consumo por categoria na safra.
   Future<bool> existeConsumoPorSafraECategoria({
     required int safraId,
     required String categoria,
@@ -185,6 +190,7 @@ class EstoqueService {
     );
   }
 
+  /// Busca o último consumo registrado da categoria.
   Future<Map<String, dynamic>?> buscarUltimoConsumoPorCategoria({
     required int safraId,
     required String categoria,

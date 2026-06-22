@@ -4,11 +4,13 @@ import '../../data/sqlite/financeiro_repository.dart';
 import '../entities/funcionario.dart';
 import '../entities/lancamento_financeiro.dart';
 
+/// Responsável pelas regras de negócio dos funcionários.
 class FuncionarioService {
   final FuncionarioRepository _funcionarioRepository = FuncionarioRepository();
 
   final FinanceiroRepository _financeiroRepository = FinanceiroRepository();
 
+  /// Salva ou atualiza um funcionário.
   Future<int> salvar(Funcionario funcionario) async {
     _validarFuncionario(funcionario);
 
@@ -30,6 +32,7 @@ class FuncionarioService {
     return await _funcionarioRepository.atualizar(funcionario);
   }
 
+  /// Registra o desligamento do funcionário.
   Future<void> desligarFuncionario({
     required Funcionario funcionario,
     required String dataDesligamento,
@@ -44,6 +47,7 @@ class FuncionarioService {
     await _funcionarioRepository.atualizar(funcionario);
   }
 
+  /// Lança a folha de pagamento no financeiro.
   Future<void> registrarFolhaPagamento({
     required Funcionario funcionario,
     required String data,
@@ -71,6 +75,7 @@ class FuncionarioService {
     await _financeiroRepository.inserir(lancamento);
   }
 
+  /// Lista os funcionários da propriedade.
   Future<List<Funcionario>> listarPorPropriedadeId(int propriedadeId) async {
     if (propriedadeId <= 0) {
       throw Exception('Propriedade inválida.');
@@ -79,6 +84,7 @@ class FuncionarioService {
     return await _funcionarioRepository.listarPorPropriedadeId(propriedadeId);
   }
 
+  /// Lista apenas funcionários ativos.
   Future<List<Funcionario>> listarAtivosPorPropriedadeId(
     int propriedadeId,
   ) async {
@@ -91,6 +97,7 @@ class FuncionarioService {
     );
   }
 
+  /// Busca um funcionário pelo ID.
   Future<Funcionario?> buscarPorId(int id) async {
     if (id <= 0) {
       throw Exception('Funcionário inválido.');
@@ -99,6 +106,7 @@ class FuncionarioService {
     return await _funcionarioRepository.buscarPorId(id);
   }
 
+  /// Remove um funcionário.
   Future<void> excluir(int id) async {
     if (id <= 0) {
       throw Exception('Funcionário inválido.');
@@ -107,6 +115,7 @@ class FuncionarioService {
     await _funcionarioRepository.excluir(id);
   }
 
+  /// Valida os dados obrigatórios do funcionário.
   void _validarFuncionario(Funcionario funcionario) {
     if (funcionario.pessoaId <= 0) {
       throw Exception('Pessoa inválida.');
@@ -135,6 +144,7 @@ class FuncionarioService {
     }
   }
 
+  /// Converte datas para o padrão do banco.
   String _converterDataBrParaBanco(String data) {
     final valor = data.trim();
 

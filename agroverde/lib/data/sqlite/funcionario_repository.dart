@@ -1,13 +1,16 @@
 import '../../domain/entities/funcionario.dart';
 import 'database_helper.dart';
 
+/// Responsável pelas operações de funcionários.
 class FuncionarioRepository {
+  /// Insere um novo funcionário.
   Future<int> inserir(Funcionario funcionario) async {
     final db = await DatabaseHelper.database;
 
     return await db.insert('funcionario', funcionario.toMap());
   }
 
+  /// Atualiza os dados do funcionário.
   Future<int> atualizar(Funcionario funcionario) async {
     final db = await DatabaseHelper.database;
 
@@ -19,12 +22,14 @@ class FuncionarioRepository {
     );
   }
 
+  /// Remove um funcionário.
   Future<int> excluir(int id) async {
     final db = await DatabaseHelper.database;
 
     return await db.delete('funcionario', where: 'id = ?', whereArgs: [id]);
   }
 
+  /// Busca um funcionário pelo ID.
   Future<Funcionario?> buscarPorId(int id) async {
     final db = await DatabaseHelper.database;
 
@@ -42,6 +47,7 @@ class FuncionarioRepository {
     return Funcionario.fromMap(resultado.first);
   }
 
+  /// Lista os funcionários da propriedade.
   Future<List<Funcionario>> listarPorPropriedadeId(int propriedadeId) async {
     final db = await DatabaseHelper.database;
 
@@ -55,6 +61,7 @@ class FuncionarioRepository {
     return resultado.map((map) => Funcionario.fromMap(map)).toList();
   }
 
+  /// Lista apenas funcionários ativos.
   Future<List<Funcionario>> listarAtivosPorPropriedadeId(
     int propriedadeId,
   ) async {
@@ -70,6 +77,7 @@ class FuncionarioRepository {
     return resultado.map((map) => Funcionario.fromMap(map)).toList();
   }
 
+  /// Lista todos os funcionários cadastrados.
   Future<List<Funcionario>> listarTodos() async {
     final db = await DatabaseHelper.database;
 
@@ -81,6 +89,7 @@ class FuncionarioRepository {
     return resultado.map((map) => Funcionario.fromMap(map)).toList();
   }
 
+  /// Verifica se a pessoa já está vinculada à propriedade.
   Future<bool> existeFuncionarioParaPessoa(
     int pessoaId,
     int propriedadeId,

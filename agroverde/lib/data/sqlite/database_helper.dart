@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
+/// Classe responsável por centralizar a conexão com o banco SQLite.
 class DatabaseHelper {
   static Database? _database;
 
+  /// Retorna a instância ativa do banco ou inicializa uma nova conexão.
   static Future<Database> get database async {
     if (_database != null) {
       return _database!;
@@ -14,6 +16,7 @@ class DatabaseHelper {
     return _database!;
   }
 
+  /// Define o caminho físico do banco e executa a abertura do SQLite.
   static Future<Database> _initDatabase() async {
     String path = join(await getDatabasesPath(), 'agroverde.db');
 
@@ -27,7 +30,9 @@ class DatabaseHelper {
     );
   }
 
+  /// Cria todas as tabelas necessárias para uma instalação limpa do banco.
   static Future<void> _onCreate(Database db, int version) async {
+    /// Armazena os usuários responsáveis pelo acesso ao sistema.
     await db.execute('''
       CREATE TABLE usuario (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -37,6 +42,7 @@ class DatabaseHelper {
       )
     ''');
 
+    /// Armazena os dados pessoais vinculados ao usuário.
     await db.execute('''
       CREATE TABLE pessoa (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -55,6 +61,7 @@ class DatabaseHelper {
       )
     ''');
 
+    /// Registra as propriedades rurais cadastradas por usuário.
     await db.execute('''
       CREATE TABLE propriedade (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -69,6 +76,7 @@ class DatabaseHelper {
       )
     ''');
 
+    /// Registra funcionários vinculados a uma pessoa e propriedade.
     await db.execute('''
       CREATE TABLE IF NOT EXISTS funcionario (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -86,6 +94,7 @@ class DatabaseHelper {
       )
     ''');
 
+    /// Divide a propriedade em áreas produtivas controladas individualmente.
     await db.execute('''
       CREATE TABLE IF NOT EXISTS talhao (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -100,6 +109,7 @@ class DatabaseHelper {
       )
     ''');
 
+    /// Controla o ciclo produtivo vinculado ao talhão.
     await db.execute('''
       CREATE TABLE IF NOT EXISTS safra (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -119,6 +129,7 @@ class DatabaseHelper {
       )
     ''');
 
+    /// Registra a produção obtida ao finalizar uma safra.
     await db.execute('''
       CREATE TABLE IF NOT EXISTS colheita (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -134,6 +145,7 @@ class DatabaseHelper {
       )
     ''');
 
+    /// Controla o saldo disponível dos grãos após a colheita.
     await db.execute('''
       CREATE TABLE IF NOT EXISTS armazenamento_grao (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -150,6 +162,7 @@ class DatabaseHelper {
       )
     ''');
 
+    /// Registra vendas realizadas a partir do armazenamento de grãos.
     await db.execute('''
       CREATE TABLE IF NOT EXISTS venda_grao (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -169,6 +182,8 @@ class DatabaseHelper {
           REFERENCES propriedade(id)
       )
     ''');
+
+    /// Registra veículos e máquinas vinculados à propriedade.
     await db.execute('''
   CREATE TABLE IF NOT EXISTS veiculo (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -187,7 +202,7 @@ class DatabaseHelper {
 
     status TEXT NOT NULL DEFAULT 'Ativo',
 
-   valor_venda REAL DEFAULT 0,
+    valor_venda REAL DEFAULT 0,
     data_venda TEXT,
 
     observacao TEXT,
@@ -197,6 +212,7 @@ class DatabaseHelper {
   )
 ''');
 
+    /// Registra abastecimentos feitos em veículos ou máquinas.
     await db.execute('''
   CREATE TABLE IF NOT EXISTS abastecimento (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -218,6 +234,7 @@ class DatabaseHelper {
   )
 ''');
 
+    /// Registra manutenções preventivas ou corretivas dos veículos.
     await db.execute('''
   CREATE TABLE IF NOT EXISTS manutencao_veiculo (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -242,11 +259,13 @@ class DatabaseHelper {
 ''');
   }
 
+  /// Aplica alterações estruturais quando o banco já existe em versão anterior.
   static Future<void> _onUpgrade(
     Database db,
     int oldVersion,
     int newVersion,
   ) async {
+    /// Versão 2: adiciona controle de talhões.
     if (oldVersion < 2) {
       await db.execute('''
         CREATE TABLE IF NOT EXISTS talhao (
@@ -263,6 +282,7 @@ class DatabaseHelper {
       ''');
     }
 
+    /// Versão 3: adiciona controle de safras.
     if (oldVersion < 3) {
       await db.execute('''
         CREATE TABLE IF NOT EXISTS safra (
@@ -284,6 +304,7 @@ class DatabaseHelper {
       ''');
     }
 
+    /// Versão 4: reforça a criação da tabela safra em bancos antigos.
     if (oldVersion < 4) {
       await db.execute('''
         CREATE TABLE IF NOT EXISTS safra (
@@ -305,6 +326,7 @@ class DatabaseHelper {
       ''');
     }
 
+    /// Versão 5: adiciona cadastro de funcionários.
     if (oldVersion < 5) {
       await db.execute('''
         CREATE TABLE IF NOT EXISTS funcionario (
@@ -324,6 +346,7 @@ class DatabaseHelper {
       ''');
     }
 
+    /// Versão 6: adiciona colheita, armazenamento e venda de grãos.
     if (oldVersion < 6) {
       await db.execute('''
         CREATE TABLE IF NOT EXISTS colheita (
@@ -377,6 +400,7 @@ class DatabaseHelper {
       ''');
     }
 
+    /// Versão 7: adiciona veículos, abastecimentos e manutenções.
     if (oldVersion < 7) {
       await db.execute('''
     CREATE TABLE IF NOT EXISTS veiculo (

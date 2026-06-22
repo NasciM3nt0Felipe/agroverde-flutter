@@ -39,6 +39,7 @@ class _DashboardPageState extends State<DashboardPage> {
     });
   }
 
+  /// Navega para uma página e atualiza os indicadores ao retornar.
   Future<void> _abrirRota(String rota) async {
     await Navigator.pushNamed(context, rota);
 
@@ -47,6 +48,7 @@ class _DashboardPageState extends State<DashboardPage> {
     await _carregarDashboard();
   }
 
+  /// Carrega os indicadores principais da propriedade em foco.
   Future<void> _carregarDashboard() async {
     final propriedadeId = SessaoService.propriedadeId;
 
@@ -117,6 +119,7 @@ class _DashboardPageState extends State<DashboardPage> {
     });
   }
 
+  /// Formata valores monetários para exibição.
   String _formatarMoeda(double valor) {
     return 'R\$ ${valor.toStringAsFixed(2).replaceAll('.', ',')}';
   }

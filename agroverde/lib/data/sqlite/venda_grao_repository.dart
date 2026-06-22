@@ -1,13 +1,16 @@
 import '../../domain/entities/venda_grao.dart';
 import 'database_helper.dart';
 
+/// Responsável pelas operações de venda de grãos.
 class VendaGraoRepository {
+  /// Registra uma nova venda.
   Future<int> inserir(VendaGrao venda) async {
     final db = await DatabaseHelper.database;
 
     return await db.insert('venda_grao', venda.toMap());
   }
 
+  /// Lista as vendas da propriedade.
   Future<List<VendaGrao>> listarPorPropriedade(int propriedadeId) async {
     final db = await DatabaseHelper.database;
 

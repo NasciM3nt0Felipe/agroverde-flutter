@@ -1,13 +1,16 @@
 import '../../domain/entities/armazenamento_grao.dart';
 import 'database_helper.dart';
 
+/// Responsável pelas operações de armazenamento de grãos.
 class ArmazenamentoGraoRepository {
+  /// Insere um novo registro de armazenamento.
   Future<int> inserir(ArmazenamentoGrao armazenamento) async {
     final db = await DatabaseHelper.database;
 
     return await db.insert('armazenamento_grao', armazenamento.toMap());
   }
 
+  /// Lista os grãos armazenados da propriedade selecionada.
   Future<List<ArmazenamentoGrao>> listarPorPropriedade(
     int propriedadeId,
   ) async {
@@ -23,6 +26,7 @@ class ArmazenamentoGraoRepository {
     return maps.map((map) => ArmazenamentoGrao.fromMap(map)).toList();
   }
 
+  /// Busca um armazenamento específico pelo ID.
   Future<ArmazenamentoGrao?> buscarPorId(int id) async {
     final db = await DatabaseHelper.database;
 
@@ -38,6 +42,7 @@ class ArmazenamentoGraoRepository {
     return ArmazenamentoGrao.fromMap(maps.first);
   }
 
+  /// Atualiza os dados de um armazenamento existente.
   Future<int> atualizar(ArmazenamentoGrao armazenamento) async {
     final db = await DatabaseHelper.database;
 

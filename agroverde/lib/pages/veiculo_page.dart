@@ -86,6 +86,7 @@ class _VeiculoPageState extends State<VeiculoPage> {
     super.dispose();
   }
 
+  /// Carrega os veículos e os indicadores financeiros.
   Future<void> _carregarVeiculos() async {
     final propriedadeId = SessaoService.propriedadeId;
 
@@ -234,6 +235,7 @@ class _VeiculoPageState extends State<VeiculoPage> {
     await _carregarVeiculos();
   }
 
+  /// Gerencia os abastecimentos do veículo.
   Future<void> _abrirAbastecimentos(Veiculo veiculo) async {
     if (veiculo.id == null) return;
 
@@ -401,6 +403,7 @@ class _VeiculoPageState extends State<VeiculoPage> {
     valorController.dispose();
   }
 
+  /// Exibe os dados e ações disponíveis para o veículo.
   Future<void> _abrirManutencoes(Veiculo veiculo) async {
     if (veiculo.id == null) return;
 

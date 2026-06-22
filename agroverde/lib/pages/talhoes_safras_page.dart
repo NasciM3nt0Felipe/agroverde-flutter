@@ -92,6 +92,7 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
     super.dispose();
   }
 
+  /// Carrega os talhões da propriedade em foco (em operacao).
   Future<void> _carregarTalhoes() async {
     final propriedadeId = SessaoService.propriedadeId;
 
@@ -106,6 +107,7 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
     });
   }
 
+  /// Carrega as safras vinculadas ao talhão selecionado.
   Future<void> _carregarSafras(int talhaoId) async {
     final lista = await _safraService.listarPorTalhaoId(talhaoId);
 
@@ -114,6 +116,7 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
     });
   }
 
+  /// Exibe o seletor de datas e preenche o campo informado.
   Future<void> _selecionarData(TextEditingController controller) async {
     final dataSelecionada = await showDatePicker(
       context: context,
@@ -133,6 +136,7 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
     controller.text = '$dia/$mes/$ano';
   }
 
+  /// Salva ou atualiza um talhão aplicando as validações de área.
   Future<void> _salvarTalhao() async {
     setState(() {
       _erroAreaTalhao = null;
@@ -196,6 +200,7 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
     _cancelarFormulario();
   }
 
+  /// Salva ou atualiza uma safra vinculada ao talhão selecionado.
   Future<void> _salvarSafra() async {
     setState(() {
       _erroSafra = null;
@@ -256,6 +261,7 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
     }
   }
 
+  /// Remove um talhão e atualiza a listagem.
   Future<void> _excluirTalhao(Talhao talhao) async {
     await _talhaoService.excluir(talhao.id!);
 
@@ -275,6 +281,7 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
     );
   }
 
+  /// Remove uma safra e atualiza a listagem.
   Future<void> _excluirSafra(Safra safra) async {
     await _safraService.excluir(safra.id!);
 
@@ -342,6 +349,7 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
     });
   }
 
+  /// Seleciona o talhão e carrega suas safras.
   void _selecionarTalhao(Talhao talhao) async {
     setState(() {
       _talhaoSelecionado = talhao;

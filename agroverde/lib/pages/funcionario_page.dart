@@ -58,6 +58,7 @@ class _FuncionarioPageState extends State<FuncionarioPage> {
     super.dispose();
   }
 
+  /// Carrega os funcionários da propriedade.
   Future<void> _carregarDados() async {
     final propriedadeId = SessaoService.propriedadeId;
 
@@ -80,6 +81,7 @@ class _FuncionarioPageState extends State<FuncionarioPage> {
     });
   }
 
+  /// Salva ou atualiza um funcionário.
   Future<void> _salvar() async {
     final propriedadeId = SessaoService.propriedadeId;
 
@@ -181,6 +183,7 @@ class _FuncionarioPageState extends State<FuncionarioPage> {
     controller.text = '$dia/$mes/$ano';
   }
 
+  /// Registra a folha de pagamento no financeiro.
   Future<void> _registrarFolha(Funcionario funcionario) async {
     final dataController = TextEditingController();
 
@@ -232,6 +235,7 @@ class _FuncionarioPageState extends State<FuncionarioPage> {
     );
   }
 
+  /// Carrega os dados do funcionário para edição.
   void _editar(Funcionario funcionario) {
     final pessoa = _pessoasOperacionais.firstWhere(
       (p) => p.id == funcionario.pessoaId,

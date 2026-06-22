@@ -2,19 +2,23 @@ import '../../domain/entities/estoque_item.dart';
 import '../../domain/entities/estoque_insumo.dart';
 import 'database_helper.dart';
 
+/// Responsável pelas operações de estoque e consumo de insumos.
 class EstoqueRepository {
+  /// Insere um novo item de estoque.
   Future<int> inserir(EstoqueItem item) async {
     final db = await DatabaseHelper.database;
 
     return await db.insert('estoque_item', item.toMap());
   }
 
+  /// Registra o consumo de insumos da safra.
   Future<int> inserirConsumoInsumo(EstoqueInsumo consumo) async {
     final db = await DatabaseHelper.database;
 
     return await db.insert('estoque_insumo', consumo.toMap());
   }
 
+  /// Lista os itens de estoque da propriedade.
   Future<List<EstoqueItem>> listarPorPropriedadeId(int propriedadeId) async {
     final db = await DatabaseHelper.database;
 
@@ -30,6 +34,7 @@ class EstoqueRepository {
     }).toList();
   }
 
+  /// Lista as vacinas disponíveis em estoque.
   Future<List<EstoqueItem>> listarVacinasDisponiveisPorPropriedade(
     int propriedadeId,
   ) async {
@@ -48,6 +53,7 @@ class EstoqueRepository {
     }).toList();
   }
 
+  /// Busca item por nome, categoria e propriedade.
   Future<EstoqueItem?> buscarPorNomeCategoriaEPropriedade({
     required int propriedadeId,
     required String nome,
@@ -73,6 +79,7 @@ class EstoqueRepository {
     return EstoqueItem.fromMap(maps.first);
   }
 
+  /// Busca um item específico pelo ID.
   Future<EstoqueItem?> buscarPorId(int id) async {
     final db = await DatabaseHelper.database;
 
@@ -90,6 +97,7 @@ class EstoqueRepository {
     return EstoqueItem.fromMap(maps.first);
   }
 
+  /// Atualiza os dados de um item.
   Future<int> atualizar(EstoqueItem item) async {
     final db = await DatabaseHelper.database;
 
@@ -118,6 +126,7 @@ class EstoqueRepository {
     return resultado.isNotEmpty;
   }
 
+  /// Remove um item do estoque.
   Future<int> excluir(int id) async {
     final db = await DatabaseHelper.database;
 

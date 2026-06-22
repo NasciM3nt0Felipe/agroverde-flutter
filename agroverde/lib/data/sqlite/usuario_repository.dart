@@ -1,13 +1,16 @@
 import 'database_helper.dart';
 import '../../domain/entities/usuario.dart';
 
+/// Responsável pelas operações de usuários.
 class UsuarioRepository {
+  /// Insere um novo usuário.
   Future<int> inserir(Usuario usuario) async {
     final db = await DatabaseHelper.database;
 
     return await db.insert('usuario', usuario.toMap());
   }
 
+  /// Lista todos os usuários cadastrados.
   Future<List<Usuario>> listarTodos() async {
     final db = await DatabaseHelper.database;
 
@@ -16,6 +19,7 @@ class UsuarioRepository {
     return maps.map((map) => Usuario.fromMap(map)).toList();
   }
 
+  /// Busca um usuário pelo e-mail.
   Future<Usuario?> buscarPorEmail(String email) async {
     final db = await DatabaseHelper.database;
 

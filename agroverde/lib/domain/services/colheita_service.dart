@@ -9,6 +9,7 @@ import '../entities/lancamento_financeiro.dart';
 import '../entities/safra.dart';
 import '../entities/venda_grao.dart';
 
+/// Responsável pelas regras de negócio de colheita e venda de grãos.
 class ColheitaService {
   final ColheitaRepository _colheitaRepository = ColheitaRepository();
 
@@ -21,6 +22,7 @@ class ColheitaService {
 
   final SafraRepository _safraRepository = SafraRepository();
 
+  /// Registra uma colheita e movimenta o armazenamento.
   Future<void> registrarColheita({
     required int safraId,
     required int propriedadeId,
@@ -95,6 +97,7 @@ class ColheitaService {
     );
   }
 
+  /// Registra uma venda e gera receita financeira.
   Future<void> registrarVenda({
     required int armazenamentoId,
     required int propriedadeId,
@@ -169,14 +172,17 @@ class ColheitaService {
     await _armazenamentoRepository.atualizar(armazenamentoAtualizado);
   }
 
+  /// Lista as colheitas da propriedade.
   Future<List<Colheita>> listarColheitas(int propriedadeId) {
     return _colheitaRepository.listarPorPropriedade(propriedadeId);
   }
 
+  /// Lista os armazenamentos da propriedade.
   Future<List<ArmazenamentoGrao>> listarArmazenamentos(int propriedadeId) {
     return _armazenamentoRepository.listarPorPropriedade(propriedadeId);
   }
 
+  /// Lista as vendas realizadas.
   Future<List<VendaGrao>> listarVendas(int propriedadeId) {
     return _vendaRepository.listarPorPropriedade(propriedadeId);
   }

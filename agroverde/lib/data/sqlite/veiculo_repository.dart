@@ -1,13 +1,16 @@
 import '../../domain/entities/veiculo.dart';
 import 'database_helper.dart';
 
+/// Responsável pelas operações de veículos.
 class VeiculoRepository {
+  /// Insere um novo veículo.
   Future<int> inserir(Veiculo veiculo) async {
     final db = await DatabaseHelper.database;
 
     return await db.insert('veiculo', veiculo.toMap());
   }
 
+  /// Atualiza os dados do veículo.
   Future<int> atualizar(Veiculo veiculo) async {
     final db = await DatabaseHelper.database;
 
@@ -19,12 +22,14 @@ class VeiculoRepository {
     );
   }
 
+  /// Remove um veículo.
   Future<int> excluir(int id) async {
     final db = await DatabaseHelper.database;
 
     return await db.delete('veiculo', where: 'id = ?', whereArgs: [id]);
   }
 
+  /// Busca um veículo pelo ID.
   Future<Veiculo?> buscarPorId(int id) async {
     final db = await DatabaseHelper.database;
 
@@ -42,6 +47,7 @@ class VeiculoRepository {
     return Veiculo.fromMap(resultado.first);
   }
 
+  /// Lista os veículos da propriedade.
   Future<List<Veiculo>> listarPorPropriedadeId(int propriedadeId) async {
     final db = await DatabaseHelper.database;
 
@@ -55,6 +61,7 @@ class VeiculoRepository {
     return resultado.map((e) => Veiculo.fromMap(e)).toList();
   }
 
+  /// Lista apenas veículos ativos.
   Future<List<Veiculo>> listarAtivosPorPropriedadeId(int propriedadeId) async {
     final db = await DatabaseHelper.database;
 
@@ -68,6 +75,7 @@ class VeiculoRepository {
     return resultado.map((e) => Veiculo.fromMap(e)).toList();
   }
 
+  /// Calcula o valor total obtido com vendas.
   Future<double> totalVendidoPorPropriedade(int propriedadeId) async {
     final db = await DatabaseHelper.database;
 
@@ -83,6 +91,7 @@ class VeiculoRepository {
     return (resultado.first['total'] as num?)?.toDouble() ?? 0;
   }
 
+  /// Retorna a quantidade de veículos cadastrados.
   Future<int> totalVeiculos(int propriedadeId) async {
     final db = await DatabaseHelper.database;
 

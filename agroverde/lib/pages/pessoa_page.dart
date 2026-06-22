@@ -1,16 +1,11 @@
 import 'package:flutter/material.dart';
 
-// Bibliotecas adicionadas para realizar a consulta do CEP na API ViaCEP.
-// dart:convert converte o retorno JSON.
-// http permite fazer a requisição pela internet.
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-
 import '../data/sqlite/pessoa_repository.dart';
 import '../domain/entities/pessoa.dart';
 import '../domain/services/pessoa_service.dart';
 import '../domain/services/sessao_service.dart';
 
+/// Tela de gerenciamento do perfil do usuário.
 class PessoaPage extends StatefulWidget {
   const PessoaPage({super.key});
 
@@ -23,10 +18,10 @@ class _PessoaPageState extends State<PessoaPage> {
 
   Pessoa? _pessoaAtual;
 
-  // Controla se os campos podem ser editados.
+  /// Controla se o perfil está em modo de edição.
   bool _modoEdicao = true;
 
-  // Controla o indicador de carregamento enquanto o CEP está sendo consultado.
+  /// Exibe indicador durante a consulta do CEP.
   bool _buscandoCep = false;
 
   final PessoaRepository _pessoaRepository = PessoaRepository();
@@ -62,82 +57,52 @@ class _PessoaPageState extends State<PessoaPage> {
     super.dispose();
   }
 
-  // Função responsável por buscar o endereço automaticamente
-  // através do CEP informado pelo usuário.
-  //
-  // API utilizada:
-  // https://viacep.com.br/ws/{cep}/json/
-  //
-  // Campos preenchidos automaticamente:
-  // - Rua
-  // - Bairro
-  // - Cidade
-  // - Estado
-  // ======================================================
+  /// Consulta o endereço através do CEP informado.
   Future<void> _buscarCep(String cep) async {
-    // Remove tudo que não for número.
-    final cepLimpo = cep.replaceAll(RegExp(r'[^0-9]'), '');
-
-    // Só realiza a busca quando o CEP tiver 8 dígitos.
-    if (cepLimpo.length != 8) {
+    if (_buscandoCep) {
       return;
     }
 
-    // Ativa o carregamento no campo CEP.
+    if (!_pessoaService.cepValido(cep)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Informe um CEP válido com 8 dígitos.')),
+      );
+      return;
+    }
+
     setState(() {
       _buscandoCep = true;
     });
 
-    try {
-      // Monta a URL de consulta da API ViaCEP.
-      final url = Uri.parse('https://viacep.com.br/ws/$cepLimpo/json/');
+    final endereco = await _pessoaService.buscarEnderecoPorCep(cep);
 
-      // Realiza a requisição HTTP.
-      final response = await http.get(url);
+    if (!mounted) return;
 
-      // Verifica se a requisição retornou com sucesso.
-      if (response.statusCode == 200) {
-        // Converte o JSON retornado em um mapa de dados.
-        final dados = jsonDecode(response.body);
-
-        // Caso o CEP não exista, a API retorna erro igual a true.
-        if (dados['erro'] == true) {
-          if (!mounted) return;
-
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('CEP não encontrado.')));
-
-          return;
-        }
-
-        // Preenche automaticamente os campos de endereço.
-        setState(() {
-          _ruaController.text = dados['logradouro'] ?? '';
-          _bairroController.text = dados['bairro'] ?? '';
-          _cidadeController.text = dados['localidade'] ?? '';
-          _estadoController.text = dados['uf'] ?? '';
-        });
-      }
-    } catch (e) {
-      // Caso ocorra erro de internet ou falha na consulta.
-      if (!mounted) return;
+    if (endereco == null) {
+      setState(() {
+        _buscandoCep = false;
+      });
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Erro ao buscar o CEP. Verifique sua conexão.'),
+          content: Text(
+            'Não foi possível buscar o CEP. Preencha o endereço manualmente.',
+          ),
         ),
       );
-    } finally {
-      // Finaliza o carregamento após a consulta.
-      if (mounted) {
-        setState(() {
-          _buscandoCep = false;
-        });
-      }
+      return;
     }
+
+    setState(() {
+      _ruaController.text = endereco['rua'] ?? '';
+      _bairroController.text = endereco['bairro'] ?? '';
+      _cidadeController.text = endereco['cidade'] ?? '';
+      _estadoController.text = endereco['estado'] ?? '';
+      _buscandoCep = false;
+    });
   }
 
+  /// Carrega os dados do usuário logado.
   Future<void> _carregarPerfil() async {
     final pessoa = await _pessoaRepository.buscarPorUsuarioId(
       SessaoService.usuarioId,
@@ -160,11 +125,11 @@ class _PessoaPageState extends State<PessoaPage> {
     _estadoController.text = pessoa.estado ?? '';
 
     setState(() {
-      // Se já existe perfil, começa em modo visualização.
       _modoEdicao = false;
     });
   }
 
+  /// Salva ou atualiza o perfil do usuário.
   Future<void> _salvarPerfil() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -199,7 +164,6 @@ class _PessoaPageState extends State<PessoaPage> {
     if (!mounted) return;
 
     setState(() {
-      // Após salvar, volta para modo visualização.
       _modoEdicao = false;
     });
 
@@ -214,6 +178,7 @@ class _PessoaPageState extends State<PessoaPage> {
     );
   }
 
+  /// Habilita a edição dos campos.
   void _habilitarEdicao() {
     setState(() {
       _modoEdicao = true;
@@ -313,15 +278,6 @@ class _PessoaPageState extends State<PessoaPage> {
 
                       const SizedBox(height: 16),
 
-                      // ======================================================
-                      // ALTERAÇÃO 16/06/2026
-                      // Campo CEP alterado para realizar busca automática.
-                      //
-                      // Funcionamento:
-                      // - Usuário digita o CEP
-                      // - O sistema remove caracteres não numéricos
-                      // - Ao completar 8 dígitos, chama a função _buscarCep()
-                      // ======================================================
                       TextFormField(
                         enabled: _modoEdicao,
                         controller: _cepController,
@@ -329,9 +285,6 @@ class _PessoaPageState extends State<PessoaPage> {
                         decoration: InputDecoration(
                           labelText: 'CEP',
                           prefixIcon: const Icon(Icons.location_on),
-
-                          // ALTERAÇÃO 16/06/2026
-                          // Exibe um indicador visual enquanto a consulta está em andamento.
                           suffixIcon: _buscandoCep
                               ? const Padding(
                                   padding: EdgeInsets.all(12),
@@ -343,22 +296,23 @@ class _PessoaPageState extends State<PessoaPage> {
                                     ),
                                   ),
                                 )
-                              : null,
+                              : IconButton(
+                                  icon: const Icon(Icons.search),
+                                  onPressed: _modoEdicao && !_buscandoCep
+                                      ? () => _buscarCep(_cepController.text)
+                                      : null,
+                                ),
                         ),
-
-                        // ALTERAÇÃO 16/06/2026
-                        // Evento executado toda vez que o usuário digita no campo CEP.
-                        onChanged: (value) {
-                          // Remove caracteres que não são números.
-                          final cepLimpo = value.replaceAll(
-                            RegExp(r'[^0-9]'),
-                            '',
-                          );
-
-                          // Quando o CEP tiver 8 dígitos, realiza a busca.
-                          if (cepLimpo.length == 8) {
-                            _buscarCep(cepLimpo);
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return null;
                           }
+
+                          if (!_pessoaService.cepValido(value)) {
+                            return 'CEP deve conter 8 dígitos';
+                          }
+
+                          return null;
                         },
                       ),
 

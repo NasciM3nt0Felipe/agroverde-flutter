@@ -48,6 +48,7 @@ class _FinanceiroPageState extends State<FinanceiroPage> {
     super.dispose();
   }
 
+  /// Carrega os lançamentos financeiros da propriedade em foco.
   Future<void> _carregarLancamentos() async {
     final propriedadeId = SessaoService.propriedadeId;
 
@@ -65,6 +66,7 @@ class _FinanceiroPageState extends State<FinanceiroPage> {
     });
   }
 
+  /// Salva ou atualiza um lançamento financeiro.
   Future<void> _salvarLancamento() async {
     final propriedadeId = SessaoService.propriedadeId;
 
@@ -110,6 +112,7 @@ class _FinanceiroPageState extends State<FinanceiroPage> {
     await _carregarLancamentos();
   }
 
+  /// Preenche o formulário para edição do lançamento.
   void _editarLancamento(LancamentoFinanceiro lancamento) {
     setState(() {
       _idEditando = lancamento.id;
@@ -119,12 +122,14 @@ class _FinanceiroPageState extends State<FinanceiroPage> {
     });
   }
 
+  /// Remove um lançamento financeiro e atualiza a listagem.
   Future<void> _excluirLancamento(int id) async {
     await _repository.excluir(id);
     await _carregarLancamentos();
     _mostrarMensagem('Lançamento excluído.');
   }
 
+  /// Limpa os campos do formulário.
   void _limparCampos() {
     setState(() {
       _idEditando = null;
@@ -134,12 +139,14 @@ class _FinanceiroPageState extends State<FinanceiroPage> {
     });
   }
 
+  /// Exibe mensagens informativas ao usuário.
   void _mostrarMensagem(String mensagem) {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(mensagem)));
   }
 
+  /// Formata valores monetários para exibição.
   String _formatarValor(double valor) {
     return 'R\$ ${valor.toStringAsFixed(2).replaceAll('.', ',')}';
   }

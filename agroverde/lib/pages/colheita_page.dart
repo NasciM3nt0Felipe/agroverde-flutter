@@ -72,6 +72,7 @@ class _ColheitaPageState extends State<ColheitaPage> {
     super.dispose();
   }
 
+  /// Carrega safras, colheitas, armazenamentos e vendas da propriedade
   Future<void> _carregarDados() async {
     final propriedadeId = SessaoService.propriedadeId;
 
@@ -103,6 +104,7 @@ class _ColheitaPageState extends State<ColheitaPage> {
     });
   }
 
+  /// Registra a colheita da safra selecionada.
   Future<void> _registrarColheita() async {
     setState(() {
       _erroColheita = null;
@@ -160,6 +162,7 @@ class _ColheitaPageState extends State<ColheitaPage> {
     }
   }
 
+  /// Abre o formulário de venda para o lote armazenado.
   Future<void> _abrirVenda(ArmazenamentoGrao armazenamento) async {
     _quantidadeVendaController.clear();
     _valorUnitarioController.clear();
@@ -256,6 +259,7 @@ class _ColheitaPageState extends State<ColheitaPage> {
     );
   }
 
+  /// Registra a venda e atualiza o estoque disponível.
   Future<void> _registrarVenda(ArmazenamentoGrao armazenamento) async {
     final propriedadeId = SessaoService.propriedadeId;
 
@@ -303,6 +307,7 @@ class _ColheitaPageState extends State<ColheitaPage> {
     }
   }
 
+  /// Limpa os campos do formulário de colheita.
   void _limparColheita() {
     setState(() {
       _safraSelecionada = null;
@@ -313,6 +318,7 @@ class _ColheitaPageState extends State<ColheitaPage> {
     });
   }
 
+  /// Exibe mensagens de erro relacionadas à colheita.
   void _exibirErroColheita(String mensagem) {
     setState(() {
       _erroColheita = mensagem;
@@ -323,6 +329,7 @@ class _ColheitaPageState extends State<ColheitaPage> {
     );
   }
 
+  /// Exibe mensagens informativas ao usuário.
   void _mostrarMensagem(String mensagem) {
     ScaffoldMessenger.of(
       context,
@@ -351,6 +358,7 @@ class _ColheitaPageState extends State<ColheitaPage> {
     return valor.toStringAsFixed(2).replaceAll('.', ',');
   }
 
+  /// Retorna o produto associado à colheita.
   String _produtoDaColheita(Colheita colheita) {
     for (final armazenamento in _armazenamentos) {
       if (armazenamento.colheitaId == colheita.id) {

@@ -21,7 +21,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 6,
+      version: 7,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -169,6 +169,77 @@ class DatabaseHelper {
           REFERENCES propriedade(id)
       )
     ''');
+    await db.execute('''
+  CREATE TABLE IF NOT EXISTS veiculo (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    propriedade_id INTEGER NOT NULL,
+
+    nome TEXT NOT NULL,
+    tipo TEXT NOT NULL,
+
+    marca TEXT,
+    modelo TEXT,
+
+    ano INTEGER,
+    placa TEXT,
+
+    horimetro_odometro_atual REAL DEFAULT 0,
+
+    status TEXT NOT NULL DEFAULT 'Ativo',
+
+   valor_venda REAL DEFAULT 0,
+    data_venda TEXT,
+
+    observacao TEXT,
+
+    FOREIGN KEY(propriedade_id)
+      REFERENCES propriedade(id)
+  )
+''');
+
+    await db.execute('''
+  CREATE TABLE IF NOT EXISTS abastecimento (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+    veiculo_id INTEGER NOT NULL,
+
+    data TEXT NOT NULL,
+
+    horimetro_odometro REAL,
+
+    litros REAL NOT NULL,
+
+    valor_total REAL NOT NULL,
+
+    observacao TEXT,
+
+    FOREIGN KEY(veiculo_id)
+      REFERENCES veiculo(id)
+  )
+''');
+
+    await db.execute('''
+  CREATE TABLE IF NOT EXISTS manutencao_veiculo (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+    veiculo_id INTEGER NOT NULL,
+
+    data TEXT NOT NULL,
+
+    tipo TEXT NOT NULL,
+
+    descricao TEXT,
+
+    valor REAL NOT NULL,
+
+    horimetro_odometro REAL,
+
+    observacao TEXT,
+
+    FOREIGN KEY(veiculo_id)
+      REFERENCES veiculo(id)
+  )
+''');
   }
 
   static Future<void> _onUpgrade(
@@ -304,6 +375,80 @@ class DatabaseHelper {
             REFERENCES propriedade(id)
         )
       ''');
+    }
+
+    if (oldVersion < 7) {
+      await db.execute('''
+    CREATE TABLE IF NOT EXISTS veiculo (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      propriedade_id INTEGER NOT NULL,
+
+      nome TEXT NOT NULL,
+      tipo TEXT NOT NULL,
+
+      marca TEXT,
+      modelo TEXT,
+
+      ano INTEGER,
+      placa TEXT,
+
+      horimetro_odometro_atual REAL DEFAULT 0,
+
+      status TEXT NOT NULL DEFAULT 'Ativo',
+
+      valor_venda REAL,
+      data_venda TEXT,
+
+      observacao TEXT,
+
+      FOREIGN KEY(propriedade_id)
+        REFERENCES propriedade(id)
+    )
+  ''');
+
+      await db.execute('''
+    CREATE TABLE IF NOT EXISTS abastecimento (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+      veiculo_id INTEGER NOT NULL,
+
+      data TEXT NOT NULL,
+
+      horimetro_odometro REAL,
+
+      litros REAL NOT NULL,
+
+      valor_total REAL NOT NULL,
+
+      observacao TEXT,
+
+      FOREIGN KEY(veiculo_id)
+        REFERENCES veiculo(id)
+    )
+  ''');
+
+      await db.execute('''
+    CREATE TABLE IF NOT EXISTS manutencao_veiculo (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+      veiculo_id INTEGER NOT NULL,
+
+      data TEXT NOT NULL,
+
+      tipo TEXT NOT NULL,
+
+      descricao TEXT,
+
+      valor REAL NOT NULL,
+
+      horimetro_odometro REAL,
+
+      observacao TEXT,
+
+      FOREIGN KEY(veiculo_id)
+        REFERENCES veiculo(id)
+    )
+  ''');
     }
   }
 }

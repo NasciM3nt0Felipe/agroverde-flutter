@@ -9,10 +9,7 @@ class SanitarioRepository {
 
   Future<List<SanitarioRebanho>> listar() async {
     final db = await DatabaseHelper.database;
-    final maps = await db.query(
-      'sanitario_rebanho',
-      orderBy: 'id DESC',
-    );
+    final maps = await db.query('sanitario_rebanho', orderBy: 'id DESC');
 
     return maps.map((map) => SanitarioRebanho.fromMap(map)).toList();
   }
@@ -31,10 +28,6 @@ class SanitarioRepository {
 
   Future<int> excluir(int id) async {
     final db = await DatabaseHelper.database;
-    return db.delete(
-      'sanitario_rebanho',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    return db.delete('sanitario_rebanho', where: 'id = ?', whereArgs: [id]);
   }
 }

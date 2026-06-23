@@ -6,7 +6,9 @@ import '../domain/entities/animal.dart';
 import '../domain/entities/pesagem_rebanho.dart';
 
 class PesagemPage extends StatefulWidget {
-  const PesagemPage({super.key});
+  final Animal? animal;
+
+  const PesagemPage({super.key, this.animal});
 
   @override
   State<PesagemPage> createState() => _PesagemPageState();
@@ -23,7 +25,7 @@ class _PesagemPageState extends State<PesagemPage> {
   List<Animal> _animais = [];
   List<PesagemRebanho> _pesagens = [];
 
-  Animal? _animalSelecionado;
+  int? _animalSelecionadoId;
 
   @override
   void initState() {
@@ -38,11 +40,15 @@ class _PesagemPageState extends State<PesagemPage> {
     setState(() {
       _animais = animais;
       _pesagens = pesagens;
+
+      if (widget.animal != null) {
+        _animalSelecionadoId = widget.animal!.id;
+      }
     });
   }
 
   Future<void> _salvarPesagem() async {
-    if (_animalSelecionado == null) {
+    if (_animalSelecionadoId == null) {
       _mostrarMensagem('Selecione um animal.');
       return;
     }
@@ -63,7 +69,7 @@ class _PesagemPageState extends State<PesagemPage> {
     }
 
     final pesagem = PesagemRebanho(
-      animalId: _animalSelecionado!.id!,
+      animalId: _animalSelecionadoId!,
       peso: peso,
       data: data,
       observacao: _observacaoController.text.trim(),
@@ -74,6 +80,10 @@ class _PesagemPageState extends State<PesagemPage> {
     _pesoController.clear();
     _dataController.clear();
     _observacaoController.clear();
+
+    setState(() {
+      _animalSelecionadoId = null;
+    });
 
     await _carregarDados();
 
@@ -97,9 +107,19 @@ class _PesagemPageState extends State<PesagemPage> {
   }
 
   void _mostrarMensagem(String mensagem) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(mensagem)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(mensagem)));
+  }
+
+  List<PesagemRebanho> get _pesagensFiltradas {
+    if (_animalSelecionadoId == null) {
+      return _pesagens;
+    }
+
+    return _pesagens
+        .where((pesagem) => pesagem.animalId == _animalSelecionadoId)
+        .toList();
   }
 
   @override
@@ -142,23 +162,26 @@ class _PesagemPageState extends State<PesagemPage> {
 
                         const SizedBox(height: 16),
 
-                        DropdownButtonFormField<Animal>(
-                          value: _animalSelecionado,
+                        DropdownButtonFormField<int>(
+                          value: _animalSelecionadoId,
                           decoration: const InputDecoration(
                             labelText: 'Animal',
                             border: OutlineInputBorder(),
                           ),
-                          items: _animais.map((animal) {
-                            return DropdownMenuItem<Animal>(
-                              value: animal,
-                              child: Text(
-                                '${animal.identificacao} - ${animal.especie}',
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (animal) {
+                          items: _animais
+                              .where((animal) => animal.id != null)
+                              .map((animal) {
+                                return DropdownMenuItem<int>(
+                                  value: animal.id!,
+                                  child: Text(
+                                    '${animal.identificacao} - ${animal.especie}',
+                                  ),
+                                );
+                              })
+                              .toList(),
+                          onChanged: (id) {
                             setState(() {
-                              _animalSelecionado = animal;
+                              _animalSelecionadoId = id;
                             });
                           },
                         ),
@@ -217,7 +240,7 @@ class _PesagemPageState extends State<PesagemPage> {
 
                 const SizedBox(height: 12),
 
-                _pesagens.isEmpty
+                _pesagensFiltradas.isEmpty
                     ? const Card(
                         child: Padding(
                           padding: EdgeInsets.all(24),
@@ -229,9 +252,9 @@ class _PesagemPageState extends State<PesagemPage> {
                     : ListView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
-                        itemCount: _pesagens.length,
+                        itemCount: _pesagensFiltradas.length,
                         itemBuilder: (context, index) {
-                          final pesagem = _pesagens[index];
+                          final pesagem = _pesagensFiltradas[index];
 
                           return Card(
                             child: ListTile(

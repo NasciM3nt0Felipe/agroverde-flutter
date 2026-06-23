@@ -28,10 +28,6 @@ class PesagemRepository {
 
   Future<int> excluir(int id) async {
     final db = await DatabaseHelper.database;
-    return db.delete(
-      'pesagem_rebanho',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    return db.delete('pesagem_rebanho', where: 'id = ?', whereArgs: [id]);
   }
 }

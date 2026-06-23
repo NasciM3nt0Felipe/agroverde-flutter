@@ -10,7 +10,9 @@ import '../domain/services/sessao_service.dart';
 import '../domain/services/vacinacao_service.dart';
 
 class VacinacaoPage extends StatefulWidget {
-  const VacinacaoPage({super.key});
+  final Animal? animal;
+
+  const VacinacaoPage({super.key, this.animal});
 
   @override
   State<VacinacaoPage> createState() => _VacinacaoPageState();
@@ -72,6 +74,10 @@ class _VacinacaoPageState extends State<VacinacaoPage> {
       _animais = animais;
       _vacinasDisponiveis = vacinas;
 
+      if (widget.animal != null) {
+        _animalSelecionadoId = widget.animal!.id;
+      }
+
       final idsAnimaisDaPropriedade = animais.map((a) => a.id).toSet();
 
       _vacinacoes = vacinacoes
@@ -125,7 +131,9 @@ class _VacinacaoPageState extends State<VacinacaoPage> {
       );
 
       setState(() {
-        _animalSelecionadoId = null;
+        if (widget.animal == null) {
+          _animalSelecionadoId = null;
+        }
         _vacinaSelecionada = null;
       });
 
@@ -157,6 +165,16 @@ class _VacinacaoPageState extends State<VacinacaoPage> {
     return '${animal.first.identificacao} - ${animal.first.especie}';
   }
 
+  List<VacinacaoRebanho> get _vacinacoesFiltradas {
+    if (_animalSelecionadoId == null) {
+      return _vacinacoes;
+    }
+
+    return _vacinacoes
+        .where((vacinacao) => vacinacao.animalId == _animalSelecionadoId)
+        .toList();
+  }
+
   void _mostrarMensagem(String mensagem) {
     ScaffoldMessenger.of(
       context,
@@ -168,7 +186,7 @@ class _VacinacaoPageState extends State<VacinacaoPage> {
     final propriedadeSelecionada = SessaoService.propriedadeId != null;
     final propriedadeNome = SessaoService.propriedadeNome;
 
-    final vacinasComProximaDose = _vacinacoes
+    final vacinasComProximaDose = _vacinacoesFiltradas
         .where((v) => v.proximaDose != null && v.proximaDose!.isNotEmpty)
         .length;
 
@@ -208,7 +226,7 @@ class _VacinacaoPageState extends State<VacinacaoPage> {
                   children: [
                     _IndicadorCard(
                       titulo: 'Registros',
-                      valor: _vacinacoes.length.toString(),
+                      valor: _vacinacoesFiltradas.length.toString(),
                       icone: Icons.vaccines,
                     ),
                     _IndicadorCard(
@@ -367,7 +385,7 @@ class _VacinacaoPageState extends State<VacinacaoPage> {
                           ),
                         ),
                       )
-                    : _vacinacoes.isEmpty
+                    : _vacinacoesFiltradas.isEmpty
                     ? const Card(
                         child: Padding(
                           padding: EdgeInsets.all(24),
@@ -379,9 +397,9 @@ class _VacinacaoPageState extends State<VacinacaoPage> {
                     : ListView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
-                        itemCount: _vacinacoes.length,
+                        itemCount: _vacinacoesFiltradas.length,
                         itemBuilder: (context, index) {
-                          final vacinacao = _vacinacoes[index];
+                          final vacinacao = _vacinacoesFiltradas[index];
 
                           return Card(
                             child: ListTile(

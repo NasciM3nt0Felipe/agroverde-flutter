@@ -6,7 +6,9 @@ import '../domain/entities/animal.dart';
 import '../domain/entities/sanitario_rebanho.dart';
 
 class SanitarioPage extends StatefulWidget {
-  const SanitarioPage({super.key});
+  final Animal? animal;
+
+  const SanitarioPage({super.key, this.animal});
 
   @override
   State<SanitarioPage> createState() => _SanitarioPageState();
@@ -24,7 +26,7 @@ class _SanitarioPageState extends State<SanitarioPage> {
   List<Animal> _animais = [];
   List<SanitarioRebanho> _registros = [];
 
-  Animal? _animalSelecionado;
+  int? _animalSelecionadoId;
 
   @override
   void initState() {
@@ -39,11 +41,15 @@ class _SanitarioPageState extends State<SanitarioPage> {
     setState(() {
       _animais = animais;
       _registros = registros;
+
+      if (widget.animal != null) {
+        _animalSelecionadoId = widget.animal!.id;
+      }
     });
   }
 
   Future<void> _salvarRegistro() async {
-    if (_animalSelecionado == null) {
+    if (_animalSelecionadoId == null) {
       _mostrarMensagem('Selecione um animal.');
       return;
     }
@@ -57,7 +63,7 @@ class _SanitarioPageState extends State<SanitarioPage> {
     }
 
     final registro = SanitarioRebanho(
-      animalId: _animalSelecionado!.id!,
+      animalId: _animalSelecionadoId!,
       procedimento: procedimento,
       data: data,
       medicamento: _medicamentoController.text.trim(),
@@ -70,6 +76,12 @@ class _SanitarioPageState extends State<SanitarioPage> {
     _dataController.clear();
     _medicamentoController.clear();
     _observacaoController.clear();
+
+    setState(() {
+      if (widget.animal == null) {
+        _animalSelecionadoId = null;
+      }
+    });
 
     await _carregarDados();
 
@@ -92,15 +104,25 @@ class _SanitarioPageState extends State<SanitarioPage> {
     return '${animal.first.identificacao} - ${animal.first.especie}';
   }
 
+  List<SanitarioRebanho> get _registrosFiltrados {
+    if (_animalSelecionadoId == null) {
+      return _registros;
+    }
+
+    return _registros
+        .where((registro) => registro.animalId == _animalSelecionadoId)
+        .toList();
+  }
+
   void _mostrarMensagem(String mensagem) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(mensagem)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(mensagem)));
   }
 
   @override
   Widget build(BuildContext context) {
-    final totalComMedicamento = _registros
+    final totalComMedicamento = _registrosFiltrados
         .where((r) => r.medicamento != null && r.medicamento!.isNotEmpty)
         .length;
 
@@ -131,7 +153,7 @@ class _SanitarioPageState extends State<SanitarioPage> {
                   children: [
                     _IndicadorCard(
                       titulo: 'Registros',
-                      valor: _registros.length.toString(),
+                      valor: _registrosFiltrados.length.toString(),
                       icone: Icons.medical_services,
                     ),
                     _IndicadorCard(
@@ -161,23 +183,26 @@ class _SanitarioPageState extends State<SanitarioPage> {
 
                         const SizedBox(height: 16),
 
-                        DropdownButtonFormField<Animal>(
-                          value: _animalSelecionado,
+                        DropdownButtonFormField<int>(
+                          value: _animalSelecionadoId,
                           decoration: const InputDecoration(
                             labelText: 'Animal',
                             border: OutlineInputBorder(),
                           ),
-                          items: _animais.map((animal) {
-                            return DropdownMenuItem<Animal>(
-                              value: animal,
-                              child: Text(
-                                '${animal.identificacao} - ${animal.especie}',
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (animal) {
+                          items: _animais
+                              .where((animal) => animal.id != null)
+                              .map((animal) {
+                                return DropdownMenuItem<int>(
+                                  value: animal.id!,
+                                  child: Text(
+                                    '${animal.identificacao} - ${animal.especie}',
+                                  ),
+                                );
+                              })
+                              .toList(),
+                          onChanged: (id) {
                             setState(() {
-                              _animalSelecionado = animal;
+                              _animalSelecionadoId = id;
                             });
                           },
                         ),
@@ -247,21 +272,23 @@ class _SanitarioPageState extends State<SanitarioPage> {
 
                 const SizedBox(height: 12),
 
-                _registros.isEmpty
+                _registrosFiltrados.isEmpty
                     ? const Card(
                         child: Padding(
                           padding: EdgeInsets.all(24),
                           child: Center(
-                            child: Text('Nenhum registro sanitário cadastrado.'),
+                            child: Text(
+                              'Nenhum registro sanitário cadastrado.',
+                            ),
                           ),
                         ),
                       )
                     : ListView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
-                        itemCount: _registros.length,
+                        itemCount: _registrosFiltrados.length,
                         itemBuilder: (context, index) {
-                          final registro = _registros[index];
+                          final registro = _registrosFiltrados[index];
 
                           return Card(
                             child: ListTile(
@@ -332,7 +359,7 @@ class _IndicadorCard extends StatelessWidget {
                     ),
                   ],
                 ),
-              )
+              ),
             ],
           ),
         ),

@@ -6,7 +6,9 @@ import '../domain/entities/animal.dart';
 import '../domain/entities/reproducao_rebanho.dart';
 
 class ReproducaoPage extends StatefulWidget {
-  const ReproducaoPage({super.key});
+  final Animal? animal;
+
+  const ReproducaoPage({super.key, this.animal});
 
   @override
   State<ReproducaoPage> createState() => _ReproducaoPageState();
@@ -22,7 +24,7 @@ class _ReproducaoPageState extends State<ReproducaoPage> {
   List<Animal> _animais = [];
   List<ReproducaoRebanho> _registros = [];
 
-  Animal? _animalSelecionado;
+  int? _animalSelecionadoId;
 
   String _tipoSelecionado = 'Cobertura';
 
@@ -39,11 +41,15 @@ class _ReproducaoPageState extends State<ReproducaoPage> {
     setState(() {
       _animais = animais;
       _registros = registros;
+
+      if (widget.animal != null) {
+        _animalSelecionadoId = widget.animal!.id;
+      }
     });
   }
 
   Future<void> _salvar() async {
-    if (_animalSelecionado == null) {
+    if (_animalSelecionadoId == null) {
       _mostrarMensagem('Selecione um animal.');
       return;
     }
@@ -54,7 +60,7 @@ class _ReproducaoPageState extends State<ReproducaoPage> {
     }
 
     final registro = ReproducaoRebanho(
-      animalId: _animalSelecionado!.id!,
+      animalId: _animalSelecionadoId!,
       tipo: _tipoSelecionado,
       data: _dataController.text.trim(),
       observacao: _observacaoController.text.trim(),
@@ -64,6 +70,9 @@ class _ReproducaoPageState extends State<ReproducaoPage> {
 
     _dataController.clear();
     _observacaoController.clear();
+    if (widget.animal == null) {
+      _animalSelecionadoId = null;
+    }
 
     await _carregarDados();
 
@@ -85,6 +94,16 @@ class _ReproducaoPageState extends State<ReproducaoPage> {
     return '${animal.first.identificacao} - ${animal.first.especie}';
   }
 
+  List<ReproducaoRebanho> get _registrosFiltrados {
+    if (_animalSelecionadoId == null) {
+      return _registros;
+    }
+
+    return _registros
+        .where((registro) => registro.animalId == _animalSelecionadoId)
+        .toList();
+  }
+
   void _mostrarMensagem(String mensagem) {
     ScaffoldMessenger.of(
       context,
@@ -93,17 +112,19 @@ class _ReproducaoPageState extends State<ReproducaoPage> {
 
   @override
   Widget build(BuildContext context) {
-    final coberturas =
-        _registros.where((r) => r.tipo == 'Cobertura').length;
+    final coberturas = _registrosFiltrados
+        .where((r) => r.tipo == 'Cobertura')
+        .length;
 
-    final inseminacoes =
-        _registros.where((r) => r.tipo == 'Inseminação').length;
+    final inseminacoes = _registrosFiltrados
+        .where((r) => r.tipo == 'Inseminação')
+        .length;
 
-    final prenhezes =
-        _registros.where((r) => r.tipo == 'Prenhez').length;
+    final prenhezes = _registrosFiltrados
+        .where((r) => r.tipo == 'Prenhez')
+        .length;
 
-    final partos =
-        _registros.where((r) => r.tipo == 'Parto').length;
+    final partos = _registrosFiltrados.where((r) => r.tipo == 'Parto').length;
 
     return Scaffold(
       appBar: AppBar(
@@ -121,10 +142,7 @@ class _ReproducaoPageState extends State<ReproducaoPage> {
               children: [
                 const Text(
                   'Gestão Reprodutiva',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                 ),
 
                 const SizedBox(height: 20),
@@ -163,23 +181,26 @@ class _ReproducaoPageState extends State<ReproducaoPage> {
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       children: [
-                        DropdownButtonFormField<Animal>(
-                          value: _animalSelecionado,
+                        DropdownButtonFormField<int>(
+                          value: _animalSelecionadoId,
                           decoration: const InputDecoration(
                             labelText: 'Animal',
                             border: OutlineInputBorder(),
                           ),
-                          items: _animais.map((animal) {
-                            return DropdownMenuItem(
-                              value: animal,
-                              child: Text(
-                                '${animal.identificacao} - ${animal.especie}',
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (animal) {
+                          items: _animais
+                              .where((animal) => animal.id != null)
+                              .map((animal) {
+                                return DropdownMenuItem<int>(
+                                  value: animal.id,
+                                  child: Text(
+                                    '${animal.identificacao} - ${animal.especie}',
+                                  ),
+                                );
+                              })
+                              .toList(),
+                          onChanged: (id) {
                             setState(() {
-                              _animalSelecionado = animal;
+                              _animalSelecionadoId = id;
                             });
                           },
                         ),
@@ -254,10 +275,7 @@ class _ReproducaoPageState extends State<ReproducaoPage> {
 
                 const Text(
                   'Histórico Reprodutivo',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
 
                 const SizedBox(height: 12),
@@ -265,17 +283,15 @@ class _ReproducaoPageState extends State<ReproducaoPage> {
                 ListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _registros.length,
+                  itemCount: _registrosFiltrados.length,
                   itemBuilder: (context, index) {
-                    final registro = _registros[index];
+                    final registro = _registrosFiltrados[index];
 
                     return Card(
                       child: ListTile(
                         leading: const Icon(Icons.favorite),
                         title: Text(_nomeAnimal(registro.animalId)),
-                        subtitle: Text(
-                          '${registro.tipo} - ${registro.data}',
-                        ),
+                        subtitle: Text('${registro.tipo} - ${registro.data}'),
                         trailing: IconButton(
                           icon: const Icon(Icons.delete),
                           onPressed: () {
@@ -314,17 +330,11 @@ class _Indicador extends StatelessWidget {
       child: Card(
         child: Center(
           child: ListTile(
-            leading: Icon(
-              icone,
-              color: const Color(0xFF064E2F),
-            ),
+            leading: Icon(icone, color: const Color(0xFF064E2F)),
             title: Text(titulo),
             subtitle: Text(
               valor,
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
           ),
         ),

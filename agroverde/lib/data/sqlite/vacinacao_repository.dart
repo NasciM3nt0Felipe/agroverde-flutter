@@ -9,10 +9,7 @@ class VacinacaoRepository {
 
   Future<List<VacinacaoRebanho>> listar() async {
     final db = await DatabaseHelper.database;
-    final maps = await db.query(
-      'vacinacao_rebanho',
-      orderBy: 'id DESC',
-    );
+    final maps = await db.query('vacinacao_rebanho', orderBy: 'id DESC');
 
     return maps.map((map) => VacinacaoRebanho.fromMap(map)).toList();
   }
@@ -31,10 +28,6 @@ class VacinacaoRepository {
 
   Future<int> excluir(int id) async {
     final db = await DatabaseHelper.database;
-    return db.delete(
-      'vacinacao_rebanho',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    return db.delete('vacinacao_rebanho', where: 'id = ?', whereArgs: [id]);
   }
 }

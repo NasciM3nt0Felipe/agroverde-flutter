@@ -9,10 +9,7 @@ class ReproducaoRepository {
 
   Future<List<ReproducaoRebanho>> listar() async {
     final db = await DatabaseHelper.database;
-    final maps = await db.query(
-      'reproducao_rebanho',
-      orderBy: 'id DESC',
-    );
+    final maps = await db.query('reproducao_rebanho', orderBy: 'id DESC');
 
     return maps.map((map) => ReproducaoRebanho.fromMap(map)).toList();
   }
@@ -31,10 +28,6 @@ class ReproducaoRepository {
 
   Future<int> excluir(int id) async {
     final db = await DatabaseHelper.database;
-    return db.delete(
-      'reproducao_rebanho',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    return db.delete('reproducao_rebanho', where: 'id = ?', whereArgs: [id]);
   }
 }

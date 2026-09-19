@@ -35,4 +35,16 @@ class UsuarioRepository {
 
     return Usuario.fromMap(resultado.first);
   }
+
+  //Alteracao de senha.
+  Future<int> atualizarSenha(int usuarioId, String novaSenhaHash) async {
+    final db = await DatabaseHelper.database;
+
+    return await db.update(
+      'usuario',
+      {'senha': novaSenhaHash},
+      where: 'id = ?',
+      whereArgs: [usuarioId],
+    );
+  }
 }

@@ -4,6 +4,7 @@ import '../data/sqlite/pessoa_repository.dart';
 import '../domain/entities/pessoa.dart';
 import '../domain/services/pessoa_service.dart';
 import '../domain/services/sessao_service.dart';
+import '../domain/services/usuario_service.dart';
 
 /// Tela de gerenciamento do perfil do usuário.
 class PessoaPage extends StatefulWidget {
@@ -26,6 +27,7 @@ class _PessoaPageState extends State<PessoaPage> {
 
   final PessoaRepository _pessoaRepository = PessoaRepository();
   final PessoaService _pessoaService = PessoaService();
+  final UsuarioService _usuarioService = UsuarioService();
 
   final TextEditingController _nomeController = TextEditingController();
   final TextEditingController _cpfController = TextEditingController();
@@ -183,6 +185,219 @@ class _PessoaPageState extends State<PessoaPage> {
     setState(() {
       _modoEdicao = true;
     });
+  }
+
+  /// Abre a janela para alteração da senha do usuário.
+  Future<void> _abrirAlteracaoSenha() async {
+    final formSenhaKey = GlobalKey<FormState>();
+
+    final senhaAtualController = TextEditingController();
+    final novaSenhaController = TextEditingController();
+    final confirmarSenhaController = TextEditingController();
+
+    bool ocultarSenhaAtual = true;
+    bool ocultarNovaSenha = true;
+    bool ocultarConfirmacao = true;
+    bool salvando = false;
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Row(
+                children: [
+                  Icon(Icons.settings),
+                  SizedBox(width: 8),
+                  Text('Alterar senha'),
+                ],
+              ),
+
+              content: SizedBox(
+                width: 400,
+                child: Form(
+                  key: formSenhaKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Senha atual
+                      TextFormField(
+                        controller: senhaAtualController,
+                        obscureText: ocultarSenhaAtual,
+                        decoration: InputDecoration(
+                          labelText: 'Senha atual',
+                          prefixIcon: const Icon(Icons.lock_outline),
+                          suffixIcon: IconButton(
+                            onPressed: () {
+                              setDialogState(() {
+                                ocultarSenhaAtual = !ocultarSenhaAtual;
+                              });
+                            },
+                            icon: Icon(
+                              ocultarSenhaAtual
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
+                            ),
+                          ),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Informe sua senha atual';
+                          }
+
+                          return null;
+                        },
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Nova senha
+                      TextFormField(
+                        controller: novaSenhaController,
+                        obscureText: ocultarNovaSenha,
+                        decoration: InputDecoration(
+                          labelText: 'Nova senha',
+                          prefixIcon: const Icon(Icons.lock),
+                          suffixIcon: IconButton(
+                            onPressed: () {
+                              setDialogState(() {
+                                ocultarNovaSenha = !ocultarNovaSenha;
+                              });
+                            },
+                            icon: Icon(
+                              ocultarNovaSenha
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
+                            ),
+                          ),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Informe a nova senha';
+                          }
+
+                          if (value.length < 6) {
+                            return 'A senha deve possuir pelo menos 6 caracteres';
+                          }
+
+                          return null;
+                        },
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Confirmação da nova senha
+                      TextFormField(
+                        controller: confirmarSenhaController,
+                        obscureText: ocultarConfirmacao,
+                        decoration: InputDecoration(
+                          labelText: 'Confirmar nova senha',
+                          prefixIcon: const Icon(Icons.lock),
+                          suffixIcon: IconButton(
+                            onPressed: () {
+                              setDialogState(() {
+                                ocultarConfirmacao = !ocultarConfirmacao;
+                              });
+                            },
+                            icon: Icon(
+                              ocultarConfirmacao
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
+                            ),
+                          ),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Confirme a nova senha';
+                          }
+
+                          if (value != novaSenhaController.text) {
+                            return 'As senhas não coincidem';
+                          }
+
+                          return null;
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              actions: [
+                // Fecha o modal sem realizar alterações.
+                TextButton(
+                  onPressed: salvando
+                      ? null
+                      : () {
+                          Navigator.pop(dialogContext);
+                        },
+                  child: const Text('Cancelar'),
+                ),
+
+                // Solicita a alteração da senha ao UsuarioService.
+                ElevatedButton(
+                  onPressed: salvando
+                      ? null
+                      : () async {
+                          if (!formSenhaKey.currentState!.validate()) {
+                            return;
+                          }
+
+                          setDialogState(() {
+                            salvando = true;
+                          });
+
+                          final erro = await _usuarioService.alterarSenha(
+                            senhaAtual: senhaAtualController.text,
+                            novaSenha: novaSenhaController.text,
+                            confirmarSenha: confirmarSenhaController.text,
+                          );
+
+                          if (!dialogContext.mounted) {
+                            return;
+                          }
+
+                          // O service retorna uma mensagem quando
+                          // alguma regra de alteração não é atendida.
+                          if (erro != null) {
+                            setDialogState(() {
+                              salvando = false;
+                            });
+
+                            ScaffoldMessenger.of(
+                              this.context,
+                            ).showSnackBar(SnackBar(content: Text(erro)));
+
+                            return;
+                          }
+
+                          // Alteração realizada com sucesso.
+                          Navigator.pop(dialogContext);
+
+                          if (!mounted) {
+                            return;
+                          }
+
+                          ScaffoldMessenger.of(this.context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Senha alterada com sucesso!'),
+                            ),
+                          );
+                        },
+                  child: Text(salvando ? 'Alterando...' : 'Alterar senha'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    senhaAtualController.dispose();
+    novaSenhaController.dispose();
+    confirmarSenhaController.dispose();
   }
 
   @override
@@ -387,6 +602,17 @@ class _PessoaPageState extends State<PessoaPage> {
                                       : 'Salvar Alterações')
                                 : 'Editar Perfil',
                           ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton.icon(
+                          onPressed: _abrirAlteracaoSenha,
+                          icon: const Icon(Icons.settings),
+                          label: const Text('Alterar senha'),
                         ),
                       ),
                     ],

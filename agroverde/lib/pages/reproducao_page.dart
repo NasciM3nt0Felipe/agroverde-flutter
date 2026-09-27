@@ -4,6 +4,7 @@ import '../data/sqlite/rebanho_repository.dart';
 import '../data/sqlite/reproducao_repository.dart';
 import '../domain/entities/animal.dart';
 import '../domain/entities/reproducao_rebanho.dart';
+import '../theme/app_theme.dart';
 
 class ReproducaoPage extends StatefulWidget {
   final Animal? animal;
@@ -129,7 +130,7 @@ class _ReproducaoPageState extends State<ReproducaoPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Controle de Reprodução'),
-        backgroundColor: const Color(0xFF064E2F),
+        backgroundColor: AppTheme.primaryGreen,
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
@@ -180,6 +181,7 @@ class _ReproducaoPageState extends State<ReproducaoPage> {
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         DropdownButtonFormField<int>(
                           value: _animalSelecionadoId,
@@ -262,6 +264,9 @@ class _ReproducaoPageState extends State<ReproducaoPage> {
                         const SizedBox(height: 16),
 
                         ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            minimumSize: const Size(0, 48),
+                          ),
                           onPressed: _salvar,
                           icon: const Icon(Icons.save),
                           label: const Text('Salvar'),
@@ -289,11 +294,16 @@ class _ReproducaoPageState extends State<ReproducaoPage> {
 
                     return Card(
                       child: ListTile(
-                        leading: const Icon(Icons.favorite),
+                        leading: const Icon(
+                          Icons.favorite,
+                          color: Colors.redAccent,
+                        ),
                         title: Text(_nomeAnimal(registro.animalId)),
                         subtitle: Text('${registro.tipo} - ${registro.data}'),
                         trailing: IconButton(
+                          tooltip: 'Excluir',
                           icon: const Icon(Icons.delete),
+                          color: Colors.red,
                           onPressed: () {
                             _excluir(registro.id!);
                           },
@@ -330,7 +340,7 @@ class _Indicador extends StatelessWidget {
       child: Card(
         child: Center(
           child: ListTile(
-            leading: Icon(icone, color: const Color(0xFF064E2F)),
+            leading: Icon(icone, color: AppTheme.primaryGreen),
             title: Text(titulo),
             subtitle: Text(
               valor,

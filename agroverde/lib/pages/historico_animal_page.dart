@@ -9,6 +9,7 @@ import '../domain/entities/pesagem_rebanho.dart';
 import '../domain/entities/reproducao_rebanho.dart';
 import '../domain/entities/sanitario_rebanho.dart';
 import '../domain/entities/vacinacao_rebanho.dart';
+import '../theme/app_theme.dart';
 
 import 'pesagem_page.dart';
 import 'vacinacao_page.dart';
@@ -183,7 +184,7 @@ class _HistoricoAnimalPageState extends State<HistoricoAnimalPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Histórico do Animal'),
-        backgroundColor: const Color(0xFF064E2F),
+        backgroundColor: AppTheme.primaryGreen,
         foregroundColor: Colors.white,
       ),
       body: _carregando
@@ -199,16 +200,12 @@ class _HistoricoAnimalPageState extends State<HistoricoAnimalPage> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-
                   const SizedBox(height: 8),
-
                   Text(
                     '${animal.especie} • ${animal.raca ?? "Raça não informada"}',
                     style: const TextStyle(fontSize: 16, color: Colors.grey),
                   ),
-
                   const SizedBox(height: 24),
-
                   Card(
                     elevation: 3,
                     child: Padding(
@@ -259,16 +256,12 @@ class _HistoricoAnimalPageState extends State<HistoricoAnimalPage> {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 24),
-
                   const Text(
                     'Resumo do Animal',
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
-
                   const SizedBox(height: 12),
-
                   Wrap(
                     spacing: 12,
                     runSpacing: 12,
@@ -295,16 +288,12 @@ class _HistoricoAnimalPageState extends State<HistoricoAnimalPage> {
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 24),
-
                   const Text(
                     'Estatísticas',
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
-
                   const SizedBox(height: 12),
-
                   Wrap(
                     spacing: 12,
                     runSpacing: 12,
@@ -327,16 +316,12 @@ class _HistoricoAnimalPageState extends State<HistoricoAnimalPage> {
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 24),
-
                   const Text(
                     'Acessar Históricos',
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
-
                   const SizedBox(height: 12),
-
                   _HistoricoCard(
                     icone: Icons.monitor_weight,
                     titulo: 'Histórico de Pesagens',
@@ -445,7 +430,7 @@ class _ResumoCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(icone, color: const Color(0xFF064E2F)),
+              Icon(icone, color: AppTheme.primaryGreen),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -490,7 +475,7 @@ class _ContadorCard extends StatelessWidget {
                 valor.toString(),
                 style: const TextStyle(
                   fontSize: 24,
-                  color: Color(0xFF064E2F),
+                  color: AppTheme.primaryGreen,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -519,7 +504,7 @@ class _HistoricoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: ListTile(
-        leading: Icon(icone, color: const Color(0xFF064E2F)),
+        leading: Icon(icone, color: AppTheme.primaryGreen),
         title: Text(titulo),
         subtitle: Text(descricao),
         trailing: const Icon(Icons.arrow_forward_ios),

@@ -191,20 +191,10 @@ class _LoginPageState extends State<LoginPage> {
 
                       const SizedBox(height: 24),
 
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF064E2F),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                          ),
-
-                          onPressed: _realizarLogin,
-                          child: const Text(
-                            'Entrar',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
+                      // Botão Entrar padronizado pelo tema
+                      ElevatedButton(
+                        onPressed: _realizarLogin,
+                        child: const Text('Entrar'),
                       ),
 
                       const SizedBox(height: 16),
@@ -222,37 +212,33 @@ class _LoginPageState extends State<LoginPage> {
 
                       const SizedBox(height: 16),
 
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton(
-                          onPressed: () {
-                            print('Login com Google');
-                          },
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Image.asset(
-                                'assets/icons/google.png',
-                                height: 28,
-                              ),
-                              const SizedBox(width: 10),
-                              const Text('Entrar com Google'),
-                            ],
-                          ),
+                      // Botão Google padronizado pelo tema
+                      OutlinedButton(
+                        onPressed: () {
+                          debugPrint('Login com Google');
+                        },
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Image.asset(
+                              'assets/icons/google.png',
+                              height: 24,
+                            ),
+                            const SizedBox(width: 10),
+                            const Text('Entrar com Google'),
+                          ],
                         ),
                       ),
 
                       const SizedBox(height: 12),
 
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: () {
-                            Navigator.pushNamed(context, AppRoutes.cadastro);
-                          },
-                          icon: const Icon(Icons.person_add),
-                          label: const Text('Crie sua conta'),
-                        ),
+                      // Botão Cadastro padronizado pelo tema
+                      OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.pushNamed(context, AppRoutes.cadastro);
+                        },
+                        icon: const Icon(Icons.person_add),
+                        label: const Text('Crie sua conta'),
                       ),
 
                       const SizedBox(height: 8),

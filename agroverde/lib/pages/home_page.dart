@@ -89,12 +89,6 @@ class _HomePageState extends State<HomePage> {
       body: Stack(
         children: [
           // Imagem institucional da Home.
-          // Utilizada como elemento visual de fundo para reforçar
-          // a identidade do AgroVerde.
-          //
-          // Como a imagem já possui tons claros e suaves,
-          // não é necessária nenhuma camada de opacidade
-          // ou sobreposição branca.
           SizedBox.expand(
             child: Image.asset(
               'assets/images/home_backG.png',
@@ -126,7 +120,7 @@ class _HomePageState extends State<HomePage> {
                               ),
                               Transform.translate(
                                 offset: const Offset(7, 0),
-                                child: Icon(
+                                child: const Icon(
                                   Icons.eco,
                                   size: 36,
                                   color: AppTheme.primaryGreen,
@@ -136,13 +130,13 @@ class _HomePageState extends State<HomePage> {
                           ),
                           const SizedBox(width: 10),
                           RichText(
-                            text: TextSpan(
-                              style: const TextStyle(
+                            text: const TextSpan(
+                              style: TextStyle(
                                 fontSize: 30,
                                 fontWeight: FontWeight.bold,
                               ),
                               children: [
-                                const TextSpan(
+                                TextSpan(
                                   text: 'Agro',
                                   style: TextStyle(color: Colors.black),
                                 ),
@@ -162,15 +156,9 @@ class _HomePageState extends State<HomePage> {
                               Navigator.pushNamed(context, AppRoutes.login);
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.primaryGreen,
-                              foregroundColor: Colors.white,
+                              minimumSize: Size(0, isMobile ? 38 : 44),
                               padding: EdgeInsets.symmetric(
-                                horizontal: isMobile ? 12 : 20,
-                                vertical: isMobile ? 10 : 14,
-                              ),
-                              textStyle: TextStyle(
-                                fontSize: isMobile ? 12 : 14,
-                                fontWeight: FontWeight.bold,
+                                horizontal: isMobile ? 14 : 20,
                               ),
                             ),
                             child: const Text('Entrar'),
@@ -185,13 +173,9 @@ class _HomePageState extends State<HomePage> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xff8B6F47),
                               foregroundColor: Colors.white,
+                              minimumSize: Size(0, isMobile ? 38 : 44),
                               padding: EdgeInsets.symmetric(
-                                horizontal: isMobile ? 12 : 20,
-                                vertical: isMobile ? 10 : 14,
-                              ),
-                              textStyle: TextStyle(
-                                fontSize: isMobile ? 12 : 14,
-                                fontWeight: FontWeight.bold,
+                                horizontal: isMobile ? 14 : 20,
                               ),
                             ),
                             child: Text(isMobile ? 'Criar' : 'Criar Conta'),
@@ -247,8 +231,6 @@ class _HomePageState extends State<HomePage> {
                       const SizedBox(height: 48),
 
                       // Carrossel principal da Home.
-                      // No desktop exibe 3 cards.
-                      // No mobile exibe apenas 1 card por vez.
                       LayoutBuilder(
                         builder: (context, constraints) {
                           final bool isMobile = constraints.maxWidth < 700;
@@ -339,9 +321,6 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-// Classe de dados usada para armazenar as informações
-// de cada item do carrossel.
-// Não monta interface visual.
 class _CarouselItem {
   final String imagePath;
   final String title;
@@ -354,7 +333,6 @@ class _CarouselItem {
   });
 }
 
-// Widget reutilizável para os cards dos módulos principais da Home.
 class _FeatureCard extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -395,8 +373,6 @@ class _FeatureCard extends StatelessWidget {
   }
 }
 
-// Widget responsável pela exibição visual dos cards
-// do carrossel principal da Home.
 class _CarouselCard extends StatelessWidget {
   final String imagePath;
   final String title;

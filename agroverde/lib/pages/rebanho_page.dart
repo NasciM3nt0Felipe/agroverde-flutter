@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../data/sqlite/rebanho_repository.dart';
 import '../domain/entities/animal.dart';
 import '../domain/services/sessao_service.dart';
+import '../theme/app_theme.dart';
 import 'historico_animal_page.dart';
 
 class RebanhoPage extends StatefulWidget {
@@ -176,6 +177,7 @@ class _RebanhoPageState extends State<RebanhoPage> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
                 foregroundColor: Colors.white,
+                minimumSize: const Size(0, 44),
               ),
               child: const Text('Excluir'),
             ),
@@ -569,7 +571,7 @@ class _RebanhoPageState extends State<RebanhoPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Controle de Rebanho'),
-        backgroundColor: const Color(0xFF064E2F),
+        backgroundColor: AppTheme.primaryGreen,
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
@@ -584,18 +586,14 @@ class _RebanhoPageState extends State<RebanhoPage> {
                   'Gestão do Rebanho',
                   style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                 ),
-
                 const SizedBox(height: 8),
-
                 Text(
                   propriedadeNome == null
                       ? 'Selecione uma propriedade para gerenciar o rebanho.'
                       : 'Propriedade: $propriedadeNome',
                   style: const TextStyle(fontSize: 15, color: Colors.grey),
                 ),
-
                 const SizedBox(height: 20),
-
                 Wrap(
                   spacing: 16,
                   runSpacing: 16,
@@ -639,16 +637,12 @@ class _RebanhoPageState extends State<RebanhoPage> {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 24),
-
                 const Text(
                   'Resumo por espécie',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
-
                 const SizedBox(height: 12),
-
                 Wrap(
                   spacing: 12,
                   runSpacing: 12,
@@ -679,14 +673,11 @@ class _RebanhoPageState extends State<RebanhoPage> {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 24),
-
                 const Text(
                   'Lotes Automáticos',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
-
                 if (_loteSelecionado != null) ...[
                   const SizedBox(height: 8),
                   Row(
@@ -695,7 +686,7 @@ class _RebanhoPageState extends State<RebanhoPage> {
                         'Filtro ativo: $_loteSelecionado',
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF064E2F),
+                          color: AppTheme.primaryGreen,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -711,9 +702,7 @@ class _RebanhoPageState extends State<RebanhoPage> {
                     ],
                   ),
                 ],
-
                 const SizedBox(height: 12),
-
                 Wrap(
                   spacing: 12,
                   runSpacing: 12,
@@ -775,9 +764,7 @@ class _RebanhoPageState extends State<RebanhoPage> {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 24),
-
                 Card(
                   elevation: 3,
                   child: Padding(
@@ -794,9 +781,7 @@ class _RebanhoPageState extends State<RebanhoPage> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-
                         const SizedBox(height: 16),
-
                         Wrap(
                           spacing: 12,
                           runSpacing: 12,
@@ -810,7 +795,6 @@ class _RebanhoPageState extends State<RebanhoPage> {
                               enabled: propriedadeSelecionada,
                               readOnly: _idEditando == null,
                             ),
-
                             SizedBox(
                               width: 250,
                               child: DropdownButtonFormField<String>(
@@ -836,13 +820,11 @@ class _RebanhoPageState extends State<RebanhoPage> {
                                     : null,
                               ),
                             ),
-
                             _campoTexto(
                               controller: _racaController,
                               label: 'Raça',
                               enabled: propriedadeSelecionada,
                             ),
-
                             SizedBox(
                               width: 250,
                               child: TextField(
@@ -859,7 +841,6 @@ class _RebanhoPageState extends State<RebanhoPage> {
                                     : null,
                               ),
                             ),
-
                             _campoTexto(
                               controller: _pesoController,
                               label: 'Peso',
@@ -868,7 +849,6 @@ class _RebanhoPageState extends State<RebanhoPage> {
                             ),
                           ],
                         ),
-
                         if (propriedadeSelecionada) ...[
                           const SizedBox(height: 12),
                           Text(
@@ -876,14 +856,12 @@ class _RebanhoPageState extends State<RebanhoPage> {
                                 ? 'Código previsto: ${_codigoPrevisto()}'
                                 : 'Editando código: ${_codigoPrevisto()}',
                             style: const TextStyle(
-                              color: Color(0xFF064E2F),
+                              color: AppTheme.primaryGreen,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                         ],
-
                         const SizedBox(height: 12),
-
                         Wrap(
                           spacing: 12,
                           runSpacing: 12,
@@ -915,7 +893,6 @@ class _RebanhoPageState extends State<RebanhoPage> {
                                     : null,
                               ),
                             ),
-
                             SizedBox(
                               width: 250,
                               child: DropdownButtonFormField<String>(
@@ -953,9 +930,7 @@ class _RebanhoPageState extends State<RebanhoPage> {
                             ),
                           ],
                         ),
-
                         const SizedBox(height: 12),
-
                         TextField(
                           controller: _observacaoController,
                           enabled: propriedadeSelecionada,
@@ -965,12 +940,13 @@ class _RebanhoPageState extends State<RebanhoPage> {
                             border: OutlineInputBorder(),
                           ),
                         ),
-
                         const SizedBox(height: 16),
-
                         Row(
                           children: [
                             ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                minimumSize: const Size(0, 48),
+                              ),
                               onPressed: propriedadeSelecionada
                                   ? _salvarAnimal
                                   : null,
@@ -981,11 +957,12 @@ class _RebanhoPageState extends State<RebanhoPage> {
                                 _idEditando == null ? 'Cadastrar' : 'Atualizar',
                               ),
                             ),
-
                             const SizedBox(width: 12),
-
                             if (_idEditando != null)
                               OutlinedButton(
+                                style: OutlinedButton.styleFrom(
+                                  minimumSize: const Size(0, 48),
+                                ),
                                 onPressed: _limparCampos,
                                 child: const Text('Cancelar edição'),
                               ),
@@ -995,16 +972,12 @@ class _RebanhoPageState extends State<RebanhoPage> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 24),
-
                 const Text(
                   'Controles do Rebanho',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
-
                 const SizedBox(height: 12),
-
                 const Wrap(
                   spacing: 16,
                   runSpacing: 16,
@@ -1035,16 +1008,12 @@ class _RebanhoPageState extends State<RebanhoPage> {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 24),
-
                 const Text(
                   'Lista de animais',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
-
                 const SizedBox(height: 12),
-
                 TextField(
                   controller: _buscaController,
                   enabled: propriedadeSelecionada,
@@ -1059,9 +1028,7 @@ class _RebanhoPageState extends State<RebanhoPage> {
                     setState(() {});
                   },
                 ),
-
                 const SizedBox(height: 12),
-
                 Wrap(
                   spacing: 12,
                   runSpacing: 12,
@@ -1152,9 +1119,7 @@ class _RebanhoPageState extends State<RebanhoPage> {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 12),
-
                 !propriedadeSelecionada
                     ? const Card(
                         child: Padding(
@@ -1167,91 +1132,96 @@ class _RebanhoPageState extends State<RebanhoPage> {
                         ),
                       )
                     : _animais.isEmpty
-                    ? const Card(
-                        child: Padding(
-                          padding: EdgeInsets.all(24),
-                          child: Center(
-                            child: Text('Nenhum animal cadastrado.'),
-                          ),
-                        ),
-                      )
-                    : _animaisFiltrados.isEmpty
-                    ? const Card(
-                        child: Padding(
-                          padding: EdgeInsets.all(24),
-                          child: Center(
-                            child: Text(
-                              'Nenhum animal encontrado na pesquisa.',
+                        ? const Card(
+                            child: Padding(
+                              padding: EdgeInsets.all(24),
+                              child: Center(
+                                child: Text('Nenhum animal cadastrado.'),
+                              ),
                             ),
-                          ),
-                        ),
-                      )
-                    : ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: _animaisFiltrados.length,
-                        itemBuilder: (context, index) {
-                          final animal = _animaisFiltrados[index];
+                          )
+                        : _animaisFiltrados.isEmpty
+                            ? const Card(
+                                child: Padding(
+                                  padding: EdgeInsets.all(24),
+                                  child: Center(
+                                    child: Text(
+                                      'Nenhum animal encontrado na pesquisa.',
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : ListView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: _animaisFiltrados.length,
+                                itemBuilder: (context, index) {
+                                  final animal = _animaisFiltrados[index];
 
-                          return Card(
-                            child: ListTile(
-                              leading: const Icon(
-                                Icons.pets,
-                                color: Color(0xFF064E2F),
-                              ),
-                              title: Text(
-                                '${animal.identificacao} - ${animal.especie}',
-                              ),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Raça: ${animal.raca ?? '-'} | Idade: ${_calcularIdade(animal.dataNascimento)}',
-                                  ),
-                                  Text(
-                                    'Sexo: ${animal.sexo} | Peso: ${animal.peso ?? '-'} kg',
-                                  ),
-                                  const SizedBox(height: 6),
-                                  _statusChip(animal.status),
-                                ],
-                              ),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.history),
-                                    tooltip: 'Histórico',
-                                    onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => HistoricoAnimalPage(
-                                            animal: animal,
+                                  return Card(
+                                    child: ListTile(
+                                      leading: const Icon(
+                                        Icons.pets,
+                                        color: AppTheme.primaryGreen,
+                                      ),
+                                      title: Text(
+                                        '${animal.identificacao} - ${animal.especie}',
+                                      ),
+                                      subtitle: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Raça: ${animal.raca ?? '-'} | Idade: ${_calcularIdade(animal.dataNascimento)}',
                                           ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.edit),
-                                    tooltip: 'Editar',
-                                    onPressed: () {
-                                      _editarAnimal(animal);
-                                    },
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete),
-                                    tooltip: 'Excluir',
-                                    onPressed: () {
-                                      _excluirAnimal(animal.id!);
-                                    },
-                                  ),
-                                ],
+                                          Text(
+                                            'Sexo: ${animal.sexo} | Peso: ${animal.peso ?? '-'} kg',
+                                          ),
+                                          const SizedBox(height: 6),
+                                          _statusChip(animal.status),
+                                        ],
+                                      ),
+                                      trailing: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          IconButton(
+                                            icon: const Icon(Icons.history),
+                                            color: AppTheme.primaryGreen,
+                                            tooltip: 'Histórico',
+                                            onPressed: () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (_) =>
+                                                      HistoricoAnimalPage(
+                                                    animal: animal,
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                          IconButton(
+                                            icon: const Icon(Icons.edit),
+                                            color: AppTheme.primaryGreen,
+                                            tooltip: 'Editar',
+                                            onPressed: () {
+                                              _editarAnimal(animal);
+                                            },
+                                          ),
+                                          IconButton(
+                                            icon: const Icon(Icons.delete),
+                                            color: Colors.red,
+                                            tooltip: 'Excluir',
+                                            onPressed: () {
+                                              _excluirAnimal(animal.id!);
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
-                            ),
-                          );
-                        },
-                      ),
               ],
             ),
           ),
@@ -1307,7 +1277,7 @@ class _IndicadorCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              Icon(icone, size: 36, color: const Color(0xFF064E2F)),
+              Icon(icone, size: 36, color: AppTheme.primaryGreen),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
@@ -1353,7 +1323,7 @@ class _ModuloControleCard extends StatelessWidget {
       width: 270,
       child: Card(
         child: ListTile(
-          leading: Icon(icone, color: const Color(0xFF064E2F)),
+          leading: Icon(icone, color: AppTheme.primaryGreen),
           title: Text(titulo),
           subtitle: Text(subtitulo),
           trailing: const Icon(Icons.arrow_forward_ios),
@@ -1396,7 +1366,7 @@ class _ResumoEspecieCard extends StatelessWidget {
                 quantidade.toString(),
                 style: const TextStyle(
                   fontSize: 22,
-                  color: Color(0xFF064E2F),
+                  color: AppTheme.primaryGreen,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -1433,7 +1403,7 @@ class _LoteAutomaticoCard extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
           side: BorderSide(
-            color: selecionado ? const Color(0xFF064E2F) : Colors.transparent,
+            color: selecionado ? AppTheme.primaryGreen : Colors.transparent,
             width: 1.2,
           ),
         ),
@@ -1463,7 +1433,7 @@ class _LoteAutomaticoCard extends StatelessWidget {
                   quantidade.toString(),
                   style: const TextStyle(
                     fontSize: 22,
-                    color: Color(0xFF064E2F),
+                    color: AppTheme.primaryGreen,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

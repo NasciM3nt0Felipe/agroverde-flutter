@@ -8,6 +8,7 @@ import '../domain/entities/estoque_item.dart';
 import '../domain/entities/vacinacao_rebanho.dart';
 import '../domain/services/sessao_service.dart';
 import '../domain/services/vacinacao_service.dart';
+import '../theme/app_theme.dart';
 
 class VacinacaoPage extends StatefulWidget {
   final Animal? animal;
@@ -193,7 +194,7 @@ class _VacinacaoPageState extends State<VacinacaoPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Vacinação do Rebanho'),
-        backgroundColor: const Color(0xFF064E2F),
+        backgroundColor: AppTheme.primaryGreen,
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
@@ -354,6 +355,9 @@ class _VacinacaoPageState extends State<VacinacaoPage> {
                         const SizedBox(height: 16),
 
                         ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            minimumSize: const Size(0, 48),
+                          ),
                           onPressed: propriedadeSelecionada
                               ? _salvarVacinacao
                               : null,
@@ -377,7 +381,7 @@ class _VacinacaoPageState extends State<VacinacaoPage> {
                 !propriedadeSelecionada
                     ? const Card(
                         child: Padding(
-                          padding: EdgeInsets.all(24),
+                          padding: const EdgeInsets.all(24),
                           child: Center(
                             child: Text(
                               'Selecione uma propriedade para visualizar as vacinações.',
@@ -386,41 +390,43 @@ class _VacinacaoPageState extends State<VacinacaoPage> {
                         ),
                       )
                     : _vacinacoesFiltradas.isEmpty
-                    ? const Card(
-                        child: Padding(
-                          padding: EdgeInsets.all(24),
-                          child: Center(
-                            child: Text('Nenhuma vacinação registrada.'),
-                          ),
-                        ),
-                      )
-                    : ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: _vacinacoesFiltradas.length,
-                        itemBuilder: (context, index) {
-                          final vacinacao = _vacinacoesFiltradas[index];
-
-                          return Card(
-                            child: ListTile(
-                              leading: const Icon(
-                                Icons.vaccines,
-                                color: Color(0xFF064E2F),
-                              ),
-                              title: Text(_nomeAnimal(vacinacao.animalId)),
-                              subtitle: Text(
-                                'Vacina: ${vacinacao.vacina} | Aplicação: ${vacinacao.dataAplicacao} | Próxima dose: ${vacinacao.proximaDose?.isEmpty ?? true ? '-' : vacinacao.proximaDose}',
-                              ),
-                              trailing: IconButton(
-                                icon: const Icon(Icons.delete),
-                                onPressed: () {
-                                  _excluirVacinacao(vacinacao.id!);
-                                },
+                        ? const Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: Center(
+                                child: Text('Nenhuma vacinação registrada.'),
                               ),
                             ),
-                          );
-                        },
-                      ),
+                          )
+                        : ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: _vacinacoesFiltradas.length,
+                            itemBuilder: (context, index) {
+                              final vacinacao = _vacinacoesFiltradas[index];
+
+                              return Card(
+                                child: ListTile(
+                                  leading: const Icon(
+                                    Icons.vaccines,
+                                    color: AppTheme.primaryGreen,
+                                  ),
+                                  title: Text(_nomeAnimal(vacinacao.animalId)),
+                                  subtitle: Text(
+                                    'Vacina: ${vacinacao.vacina} | Aplicação: ${vacinacao.dataAplicacao} | Próxima dose: ${vacinacao.proximaDose?.isEmpty ?? true ? '-' : vacinacao.proximaDose}',
+                                  ),
+                                  trailing: IconButton(
+                                    tooltip: 'Excluir',
+                                    icon: const Icon(Icons.delete),
+                                    color: Colors.red,
+                                    onPressed: () {
+                                      _excluirVacinacao(vacinacao.id!);
+                                    },
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
               ],
             ),
           ),
@@ -452,7 +458,7 @@ class _IndicadorCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              Icon(icone, size: 36, color: const Color(0xFF064E2F)),
+              Icon(icone, size: 36, color: AppTheme.primaryGreen),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(

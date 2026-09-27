@@ -173,18 +173,14 @@ class _FinanceiroPageState extends State<FinanceiroPage> {
                   'Gestão Financeira',
                   style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                 ),
-
                 const SizedBox(height: 8),
-
                 Text(
                   nomePropriedade == null
                       ? 'Selecione uma propriedade para gerenciar os lançamentos.'
                       : 'Propriedade: $nomePropriedade',
                   style: const TextStyle(fontSize: 15, color: Colors.grey),
                 ),
-
                 const SizedBox(height: 20),
-
                 Wrap(
                   spacing: 16,
                   runSpacing: 16,
@@ -206,9 +202,7 @@ class _FinanceiroPageState extends State<FinanceiroPage> {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 24),
-
                 Card(
                   elevation: 3,
                   child: Padding(
@@ -225,9 +219,7 @@ class _FinanceiroPageState extends State<FinanceiroPage> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-
                         const SizedBox(height: 16),
-
                         TextField(
                           controller: _descricaoController,
                           enabled: SessaoService.propriedadeId != null,
@@ -236,9 +228,7 @@ class _FinanceiroPageState extends State<FinanceiroPage> {
                             border: OutlineInputBorder(),
                           ),
                         ),
-
                         const SizedBox(height: 12),
-
                         TextField(
                           controller: _valorController,
                           enabled: SessaoService.propriedadeId != null,
@@ -248,9 +238,7 @@ class _FinanceiroPageState extends State<FinanceiroPage> {
                             border: OutlineInputBorder(),
                           ),
                         ),
-
                         const SizedBox(height: 12),
-
                         DropdownButtonFormField<String>(
                           value: _tipoSelecionado,
                           decoration: const InputDecoration(
@@ -275,12 +263,13 @@ class _FinanceiroPageState extends State<FinanceiroPage> {
                                   });
                                 },
                         ),
-
                         const SizedBox(height: 16),
-
                         Row(
                           children: [
                             ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                minimumSize: const Size(0, 45),
+                              ),
                               onPressed: SessaoService.propriedadeId == null
                                   ? null
                                   : _salvarLancamento,
@@ -291,46 +280,42 @@ class _FinanceiroPageState extends State<FinanceiroPage> {
                                 _idEditando == null ? 'Cadastrar' : 'Atualizar',
                               ),
                             ),
-                            const SizedBox(width: 12),
-                            if (_idEditando != null)
+                            if (_idEditando != null) ...[
+                              const SizedBox(width: 12),
                               OutlinedButton(
+                                style: OutlinedButton.styleFrom(
+                                  minimumSize: const Size(0, 45),
+                                ),
                                 onPressed: _limparCampos,
                                 child: const Text('Cancelar edição'),
                               ),
+                            ],
                           ],
                         ),
                       ],
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 24),
-
                 const Text(
                   'Gráfico de Receitas e Despesas',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
-
                 const SizedBox(height: 12),
-
                 _GraficoFinanceiro(
                   receitas: totalReceitas,
                   despesas: totalDespesas,
                 ),
-
                 const SizedBox(height: 24),
-
                 const Text(
                   'Lançamentos',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
-
                 const SizedBox(height: 12),
-
                 SessaoService.propriedadeId == null
                     ? const Card(
                         child: Padding(
-                          padding: EdgeInsets.all(24),
+                          padding: const EdgeInsets.all(24),
                           child: Center(
                             child: Text(
                               'Selecione uma propriedade para visualizar os lançamentos.',
@@ -339,62 +324,68 @@ class _FinanceiroPageState extends State<FinanceiroPage> {
                         ),
                       )
                     : _lancamentos.isEmpty
-                    ? const Card(
-                        child: Padding(
-                          padding: EdgeInsets.all(24),
-                          child: Center(
-                            child: Text('Nenhum lançamento cadastrado.'),
-                          ),
-                        ),
-                      )
-                    : ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: _lancamentos.length,
-                        itemBuilder: (context, index) {
-                          final item = _lancamentos[index];
-
-                          return Card(
-                            child: ListTile(
-                              leading: Icon(
-                                item.tipo == 'receita'
-                                    ? Icons.arrow_upward
-                                    : Icons.arrow_downward,
-                                color: item.tipo == 'receita'
-                                    ? Colors.green
-                                    : Colors.red,
-                              ),
-                              title: Text(item.descricao),
-                              subtitle: Text(
-                                item.tipo == 'receita' ? 'Receita' : 'Despesa',
-                              ),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    _formatarValor(item.valor),
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.edit),
-                                    onPressed: () {
-                                      _editarLancamento(item);
-                                    },
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete),
-                                    onPressed: () {
-                                      _excluirLancamento(item.id!);
-                                    },
-                                  ),
-                                ],
+                        ? const Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: Center(
+                                child: Text('Nenhum lançamento cadastrado.'),
                               ),
                             ),
-                          );
-                        },
-                      ),
+                          )
+                        : ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: _lancamentos.length,
+                            itemBuilder: (context, index) {
+                              final item = _lancamentos[index];
+
+                              return Card(
+                                child: ListTile(
+                                  leading: Icon(
+                                    item.tipo == 'receita'
+                                        ? Icons.arrow_upward
+                                        : Icons.arrow_downward,
+                                    color: item.tipo == 'receita'
+                                        ? Colors.green
+                                        : Colors.red,
+                                  ),
+                                  title: Text(item.descricao),
+                                  subtitle: Text(
+                                    item.tipo == 'receita'
+                                        ? 'Receita'
+                                        : 'Despesa',
+                                  ),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        _formatarValor(item.valor),
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      IconButton(
+                                        tooltip: 'Editar',
+                                        icon: const Icon(Icons.edit),
+                                        color: const Color(0xFF064E2F),
+                                        onPressed: () {
+                                          _editarLancamento(item);
+                                        },
+                                      ),
+                                      IconButton(
+                                        tooltip: 'Excluir',
+                                        icon: const Icon(Icons.delete),
+                                        color: Colors.red,
+                                        onPressed: () {
+                                          _excluirLancamento(item.id!);
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
               ],
             ),
           ),

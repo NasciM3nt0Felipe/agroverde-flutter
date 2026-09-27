@@ -174,9 +174,7 @@ class _CadastroPageState extends State<CadastroPage> {
                               ),
                             ],
                           ),
-
                           const SizedBox(height: 12),
-
                           RichText(
                             text: const TextSpan(
                               style: TextStyle(
@@ -195,7 +193,6 @@ class _CadastroPageState extends State<CadastroPage> {
                               ],
                             ),
                           ),
-
                           const SizedBox(height: 8),
 
                           // Exibe "Crie sua conta" antes do cadastro
@@ -349,37 +346,24 @@ class _CadastroPageState extends State<CadastroPage> {
 
                           const SizedBox(height: 26),
 
-                          SizedBox(
-                            width: double.infinity,
-                            height: 52,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xff0B5D35),
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(28),
-                                ),
-                              ),
-                              onPressed: () async {
-                                // Se já cadastrou, o botão passa a levar para o Login.
-                                if (_cadastroRealizado) {
-                                  Navigator.pushReplacementNamed(
-                                    context,
-                                    AppRoutes.login,
-                                  );
-                                  return;
-                                }
+                          // Botão padronizado pelo AppTheme
+                          ElevatedButton(
+                            onPressed: () async {
+                              // Se já cadastrou, o botão passa a levar para o Login.
+                              if (_cadastroRealizado) {
+                                Navigator.pushReplacementNamed(
+                                  context,
+                                  AppRoutes.login,
+                                );
+                                return;
+                              }
 
-                                await _cadastrarUsuario();
-                              },
-                              child: Text(
-                                _cadastroRealizado
-                                    ? 'Ir para Login'
-                                    : 'Criar Conta',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                              await _cadastrarUsuario();
+                            },
+                            child: Text(
+                              _cadastroRealizado
+                                  ? 'Ir para Login'
+                                  : 'Criar Conta',
                             ),
                           ),
                         ],

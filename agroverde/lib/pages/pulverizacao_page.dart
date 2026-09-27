@@ -286,29 +286,23 @@ class _PulverizacaoPageState extends State<PulverizacaoPage> {
                                   ),
                                 ),
                                 const SizedBox(height: 24),
-                                SizedBox(
-                                  height: 50,
-                                  child: ElevatedButton.icon(
-                                    onPressed: _salvando
-                                        ? null
-                                        : _registrarPulverizacao,
-                                    icon: const Icon(Icons.check),
-                                    label: Text(
-                                      _salvando
-                                          ? 'Registrando...'
-                                          : 'Registrar Pulverização',
-                                    ),
+                                ElevatedButton.icon(
+                                  onPressed: _salvando
+                                      ? null
+                                      : _registrarPulverizacao,
+                                  icon: const Icon(Icons.check),
+                                  label: Text(
+                                    _salvando
+                                        ? 'Registrando...'
+                                        : 'Registrar Pulverização',
                                   ),
                                 ),
                                 const SizedBox(height: 12),
-                                SizedBox(
-                                  height: 50,
-                                  child: OutlinedButton(
-                                    onPressed: _salvando
-                                        ? null
-                                        : () => Navigator.pop(context),
-                                    child: const Text('Cancelar'),
-                                  ),
+                                OutlinedButton(
+                                  onPressed: _salvando
+                                      ? null
+                                      : () => Navigator.pop(context),
+                                  child: const Text('Cancelar'),
                                 ),
                               ],
                             ),

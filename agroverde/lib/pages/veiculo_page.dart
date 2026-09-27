@@ -56,10 +56,6 @@ class _VeiculoPageState extends State<VeiculoPage> {
 
   final List<String> _statusList = const ['Ativo', 'Manutenção', 'Vendido'];
 
-  /// Lista fixa da página.
-  ///
-  /// Nesta versão simples, o tipo do combustível é salvo no campo
-  /// "observacao" da tabela abastecimento para evitar nova migração no banco.
   final List<String> _tiposCombustivel = const [
     'Diesel',
     'Gasolina',
@@ -271,8 +267,6 @@ class _VeiculoPageState extends State<VeiculoPage> {
                 data: dataController.text.trim(),
                 litros: litros,
                 valorTotal: valor,
-
-                /// Nesta versão, o combustível escolhido é salvo em observação.
                 observacao: tipoCombustivelSelecionado,
               );
 
@@ -373,8 +367,7 @@ class _VeiculoPageState extends State<VeiculoPage> {
                         alignment: Alignment.centerRight,
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppTheme.primaryGreen,
-                            foregroundColor: Colors.white,
+                            minimumSize: const Size(0, 44),
                           ),
                           onPressed: salvar,
                           child: const Text('Salvar Abastecimento'),
@@ -527,8 +520,7 @@ class _VeiculoPageState extends State<VeiculoPage> {
                         alignment: Alignment.centerRight,
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppTheme.primaryGreen,
-                            foregroundColor: Colors.white,
+                            minimumSize: const Size(0, 44),
                           ),
                           onPressed: salvar,
                           child: const Text('Salvar Manutenção'),
@@ -647,22 +639,22 @@ class _VeiculoPageState extends State<VeiculoPage> {
               ),
             )
           : _carregando
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _cabecalho(),
-                  const SizedBox(height: 20),
-                  _resumoCards(),
-                  const SizedBox(height: 20),
-                  if (_mostrarFormulario) _formulario(),
-                  if (_mostrarFormulario) const SizedBox(height: 20),
-                  _listaVeiculos(),
-                ],
-              ),
-            ),
+              ? const Center(child: CircularProgressIndicator())
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _cabecalho(),
+                      const SizedBox(height: 20),
+                      _resumoCards(),
+                      const SizedBox(height: 20),
+                      if (_mostrarFormulario) _formulario(),
+                      if (_mostrarFormulario) const SizedBox(height: 20),
+                      _listaVeiculos(),
+                    ],
+                  ),
+                ),
     );
   }
 
@@ -686,9 +678,7 @@ class _VeiculoPageState extends State<VeiculoPage> {
         ),
         ElevatedButton.icon(
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.primaryGreen,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+            minimumSize: const Size(0, 45),
           ),
           onPressed: _novoVeiculo,
           icon: const Icon(Icons.add),
@@ -806,8 +796,7 @@ class _VeiculoPageState extends State<VeiculoPage> {
                 children: [
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryGreen,
-                      foregroundColor: Colors.white,
+                      minimumSize: const Size(0, 48),
                     ),
                     onPressed: _salvarVeiculo,
                     child: Text(
@@ -816,6 +805,9 @@ class _VeiculoPageState extends State<VeiculoPage> {
                   ),
                   const SizedBox(width: 12),
                   OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(0, 48),
+                    ),
                     onPressed: _cancelarFormulario,
                     child: const Text('Cancelar'),
                   ),
@@ -1058,7 +1050,7 @@ class _VeiculoPageState extends State<VeiculoPage> {
 
     return SizedBox(
       width: 125,
-      height: 42,
+      height: 40,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
           backgroundColor: corBotao,
@@ -1066,7 +1058,7 @@ class _VeiculoPageState extends State<VeiculoPage> {
           elevation: 0,
           padding: EdgeInsets.zero,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(10),
           ),
         ),
         onPressed: onPressed,
@@ -1172,6 +1164,7 @@ class _VeiculoPageState extends State<VeiculoPage> {
               'Litros: ${item.litros.toStringAsFixed(2).replaceAll('.', ',')}',
             ),
             trailing: IconButton(
+              tooltip: 'Excluir',
               icon: const Icon(Icons.delete, color: Colors.red),
               onPressed: () => excluir(item),
             ),
@@ -1202,6 +1195,7 @@ class _VeiculoPageState extends State<VeiculoPage> {
               '${item.observacao.isEmpty ? '' : ' | ${item.observacao}'}',
             ),
             trailing: IconButton(
+              tooltip: 'Excluir',
               icon: const Icon(Icons.delete, color: Colors.red),
               onPressed: () => excluir(item),
             ),

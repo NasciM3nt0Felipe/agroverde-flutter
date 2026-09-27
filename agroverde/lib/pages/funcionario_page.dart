@@ -209,8 +209,7 @@ class _FuncionarioPageState extends State<FuncionarioPage> {
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryGreen,
-                foregroundColor: Colors.white,
+                minimumSize: const Size(0, 44),
               ),
               onPressed: () async {
                 try {
@@ -356,9 +355,9 @@ class _FuncionarioPageState extends State<FuncionarioPage> {
                   Text(
                     'Gestão de Funcionários',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.primaryGreen,
-                    ),
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.primaryGreen,
+                        ),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -513,20 +512,18 @@ class _FuncionarioPageState extends State<FuncionarioPage> {
                             Row(
                               children: [
                                 ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    minimumSize: const Size(0, 48),
+                                  ),
                                   onPressed: _salvar,
                                   icon: const Icon(Icons.save),
                                   label: const Text('Salvar funcionário'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppTheme.primaryGreen,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 18,
-                                      vertical: 14,
-                                    ),
-                                  ),
                                 ),
                                 const SizedBox(width: 12),
                                 OutlinedButton.icon(
+                                  style: OutlinedButton.styleFrom(
+                                    minimumSize: const Size(0, 48),
+                                  ),
                                   onPressed: _limparFormulario,
                                   icon: const Icon(Icons.clear),
                                   label: const Text('Limpar'),
@@ -544,8 +541,8 @@ class _FuncionarioPageState extends State<FuncionarioPage> {
                   Text(
                     'Funcionários cadastrados',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                   const SizedBox(height: 12),
 
@@ -554,7 +551,7 @@ class _FuncionarioPageState extends State<FuncionarioPage> {
                   else if (_funcionarios.isEmpty)
                     const Card(
                       child: Padding(
-                        padding: EdgeInsets.all(20),
+                        padding: const EdgeInsets.all(20),
                         child: Text('Nenhum funcionário cadastrado.'),
                       ),
                     )

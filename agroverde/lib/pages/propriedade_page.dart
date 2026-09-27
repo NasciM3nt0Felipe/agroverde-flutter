@@ -4,6 +4,7 @@ import '../data/sqlite/propriedade_repository.dart';
 import '../domain/entities/propriedade.dart';
 import '../domain/services/sessao_service.dart';
 import '../routes.dart';
+import '../theme/app_theme.dart';
 
 class PropriedadePage extends StatefulWidget {
   const PropriedadePage({super.key});
@@ -180,7 +181,7 @@ class _PropriedadePageState extends State<PropriedadePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Propriedades'),
-        backgroundColor: const Color(0xFF064E2F),
+        backgroundColor: AppTheme.primaryGreen,
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
@@ -195,6 +196,9 @@ class _PropriedadePageState extends State<PropriedadePage> {
                   Align(
                     alignment: Alignment.centerLeft,
                     child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(0, 45),
+                      ),
                       onPressed: _abrirFormularioCadastro,
                       icon: const Icon(Icons.add),
                       label: const Text('Nova Propriedade'),
@@ -218,9 +222,7 @@ class _PropriedadePageState extends State<PropriedadePage> {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-
                             const SizedBox(height: 24),
-
                             TextFormField(
                               controller: _nomeController,
                               decoration: const InputDecoration(
@@ -234,9 +236,7 @@ class _PropriedadePageState extends State<PropriedadePage> {
                                 return null;
                               },
                             ),
-
                             const SizedBox(height: 16),
-
                             TextFormField(
                               controller: _areaTotalController,
                               keyboardType: TextInputType.number,
@@ -260,9 +260,7 @@ class _PropriedadePageState extends State<PropriedadePage> {
                                 return null;
                               },
                             ),
-
                             const SizedBox(height: 16),
-
                             TextFormField(
                               controller: _cidadeController,
                               decoration: const InputDecoration(
@@ -270,9 +268,7 @@ class _PropriedadePageState extends State<PropriedadePage> {
                                 prefixIcon: Icon(Icons.location_city),
                               ),
                             ),
-
                             const SizedBox(height: 16),
-
                             TextFormField(
                               controller: _estadoController,
                               decoration: const InputDecoration(
@@ -280,9 +276,7 @@ class _PropriedadePageState extends State<PropriedadePage> {
                                 prefixIcon: Icon(Icons.flag),
                               ),
                             ),
-
                             const SizedBox(height: 16),
-
                             TextFormField(
                               controller: _descricaoController,
                               maxLines: 3,
@@ -291,31 +285,19 @@ class _PropriedadePageState extends State<PropriedadePage> {
                                 prefixIcon: Icon(Icons.description),
                               ),
                             ),
-
                             const SizedBox(height: 24),
-
-                            SizedBox(
-                              width: double.infinity,
-                              height: 50,
-                              child: ElevatedButton(
-                                onPressed: _salvarPropriedade,
-                                child: Text(
-                                  _editando
-                                      ? 'Salvar Alterações'
-                                      : 'Salvar Propriedade',
-                                ),
+                            ElevatedButton(
+                              onPressed: _salvarPropriedade,
+                              child: Text(
+                                _editando
+                                    ? 'Salvar Alterações'
+                                    : 'Salvar Propriedade',
                               ),
                             ),
-
                             const SizedBox(height: 12),
-
-                            SizedBox(
-                              width: double.infinity,
-                              height: 50,
-                              child: OutlinedButton(
-                                onPressed: _cancelarFormulario,
-                                child: const Text('Cancelar'),
-                              ),
+                            OutlinedButton(
+                              onPressed: _cancelarFormulario,
+                              child: const Text('Cancelar'),
                             ),
                           ],
                         ),
@@ -339,9 +321,7 @@ class _PropriedadePageState extends State<PropriedadePage> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-
                         const SizedBox(height: 16),
-
                         if (_propriedades.isEmpty)
                           const Text('Nenhuma propriedade cadastrada.')
                         else
@@ -362,7 +342,7 @@ class _PropriedadePageState extends State<PropriedadePage> {
                                       : Icons.home_work,
                                   color: selecionada
                                       ? Colors.green
-                                      : const Color(0xFF064E2F),
+                                      : AppTheme.primaryGreen,
                                 ),
                                 title: Text(propriedade.nome),
                                 subtitle: Text(
@@ -380,19 +360,21 @@ class _PropriedadePageState extends State<PropriedadePage> {
                                             ? Colors.green
                                             : const Color(0xff8B6F47),
                                         foregroundColor: Colors.white,
+                                        minimumSize: const Size(0, 38),
                                       ),
                                       child: Text(
                                         selecionada ? 'Ativa' : 'Em Espera',
                                       ),
                                     ),
-
                                     OutlinedButton(
+                                      style: OutlinedButton.styleFrom(
+                                        minimumSize: const Size(0, 38),
+                                      ),
                                       onPressed: () {
                                         _editarPropriedade(propriedade);
                                       },
                                       child: const Text('Editar'),
                                     ),
-
                                     ElevatedButton(
                                       onPressed: () {
                                         _excluirPropriedade(propriedade);
@@ -400,6 +382,7 @@ class _PropriedadePageState extends State<PropriedadePage> {
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.red,
                                         foregroundColor: Colors.white,
+                                        minimumSize: const Size(0, 38),
                                       ),
                                       child: const Text('Excluir'),
                                     ),

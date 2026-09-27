@@ -175,16 +175,12 @@ class _DashboardPageState extends State<DashboardPage> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-
                     const SizedBox(height: 4),
-
                     const Text(
                       'Painel de gestão da propriedade.',
                       style: TextStyle(fontSize: 16, color: Colors.grey),
                     ),
-
                     const SizedBox(height: 16),
-
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -216,9 +212,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         ],
                       ),
                     ),
-
                     const SizedBox(height: 24),
-
                     Wrap(
                       spacing: 16,
                       runSpacing: 16,
@@ -265,9 +259,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         ),
                       ],
                     ),
-
                     const SizedBox(height: 32),
-
                     const Text(
                       'Acesso rápido',
                       style: TextStyle(
@@ -275,9 +267,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-
                     const SizedBox(height: 16),
-
                     Wrap(
                       spacing: 16,
                       runSpacing: 16,
@@ -471,7 +461,6 @@ class _AppDrawer extends StatelessWidget {
               ),
             ),
           ),
-
           Expanded(
             child: ListView(
               padding: EdgeInsets.zero,
@@ -524,10 +513,12 @@ class _AppDrawer extends StatelessWidget {
               ],
             ),
           ),
-
           Padding(
             padding: const EdgeInsets.only(bottom: 24),
             child: TextButton.icon(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.black54,
+              ),
               onPressed: () {
                 Navigator.pushNamedAndRemoveUntil(
                   context,
@@ -535,14 +526,8 @@ class _AppDrawer extends StatelessWidget {
                   (route) => false,
                 );
               },
-              icon: const Icon(
-                Icons.logout,
-                color: Color.fromARGB(255, 55, 50, 49),
-              ),
-              label: const Text(
-                'Sair',
-                style: TextStyle(color: Color.fromARGB(255, 52, 48, 47)),
-              ),
+              icon: const Icon(Icons.logout),
+              label: const Text('Sair'),
             ),
           ),
         ],

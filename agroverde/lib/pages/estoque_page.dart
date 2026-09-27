@@ -37,10 +37,6 @@ class _EstoquePageState extends State<EstoquePage> {
   String _categoria = 'Sementes';
   String _unidadeMedida = 'Kg';
 
-  /// Categoria escolhida para consulta.
-  ///
-  /// Começa nula para evitar carregar/listar todo o estoque
-  /// ao abrir a página.
   String? _categoriaFiltro;
 
   final List<String> _categorias = const [
@@ -68,10 +64,6 @@ class _EstoquePageState extends State<EstoquePage> {
   @override
   void initState() {
     super.initState();
-
-    /// Não carregamos os itens automaticamente ao abrir a página.
-    ///
-    /// O carregamento só acontece após o usuário escolher uma categoria.
   }
 
   @override
@@ -320,19 +312,19 @@ class _EstoquePageState extends State<EstoquePage> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 24),
-
                 if (!_mostrarFormulario)
                   Align(
                     alignment: Alignment.centerLeft,
                     child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(0, 45),
+                      ),
                       onPressed: _abrirFormularioCadastro,
                       icon: const Icon(Icons.add),
                       label: const Text('Novo Item'),
                     ),
                   ),
-
                 if (_mostrarFormulario) ...[
                   Card(
                     child: Padding(
@@ -350,9 +342,7 @@ class _EstoquePageState extends State<EstoquePage> {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-
                             const SizedBox(height: 24),
-
                             TextFormField(
                               controller: _nomeController,
                               decoration: const InputDecoration(
@@ -366,9 +356,7 @@ class _EstoquePageState extends State<EstoquePage> {
                                 return null;
                               },
                             ),
-
                             const SizedBox(height: 16),
-
                             DropdownButtonFormField<String>(
                               value: _categoria,
                               decoration: const InputDecoration(
@@ -389,9 +377,7 @@ class _EstoquePageState extends State<EstoquePage> {
                                 });
                               },
                             ),
-
                             const SizedBox(height: 16),
-
                             LayoutBuilder(
                               builder: (context, constraints) {
                                 final isWide = constraints.maxWidth > 650;
@@ -435,34 +421,32 @@ class _EstoquePageState extends State<EstoquePage> {
                                 );
                               },
                             ),
-
                             const SizedBox(height: 16),
-
                             LayoutBuilder(
                               builder: (context, constraints) {
                                 final isWide = constraints.maxWidth > 650;
 
                                 final unidadeMedida =
                                     DropdownButtonFormField<String>(
-                                      value: _unidadeMedida,
-                                      decoration: const InputDecoration(
-                                        labelText: 'Unidade de medida',
-                                        prefixIcon: Icon(Icons.straighten),
-                                      ),
-                                      items: _unidades
-                                          .map(
-                                            (unidade) => DropdownMenuItem(
-                                              value: unidade,
-                                              child: Text(unidade),
-                                            ),
-                                          )
-                                          .toList(),
-                                      onChanged: (value) {
-                                        setState(() {
-                                          _unidadeMedida = value!;
-                                        });
-                                      },
-                                    );
+                                  value: _unidadeMedida,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Unidade de medida',
+                                    prefixIcon: Icon(Icons.straighten),
+                                  ),
+                                  items: _unidades
+                                      .map(
+                                        (unidade) => DropdownMenuItem(
+                                          value: unidade,
+                                          child: Text(unidade),
+                                        ),
+                                      )
+                                      .toList(),
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _unidadeMedida = value!;
+                                    });
+                                  },
+                                );
 
                                 final precoMedio = TextFormField(
                                   controller: _precoMedioController,
@@ -494,9 +478,7 @@ class _EstoquePageState extends State<EstoquePage> {
                                 );
                               },
                             ),
-
                             const SizedBox(height: 16),
-
                             TextFormField(
                               controller: _estoqueMinimoController,
                               keyboardType: TextInputType.number,
@@ -506,9 +488,7 @@ class _EstoquePageState extends State<EstoquePage> {
                               ),
                               validator: _validarNumeroObrigatorio,
                             ),
-
                             const SizedBox(height: 16),
-
                             TextFormField(
                               controller: _fornecedorController,
                               decoration: const InputDecoration(
@@ -516,9 +496,7 @@ class _EstoquePageState extends State<EstoquePage> {
                                 prefixIcon: Icon(Icons.store),
                               ),
                             ),
-
                             const SizedBox(height: 16),
-
                             TextFormField(
                               controller: _observacaoController,
                               maxLines: 3,
@@ -527,31 +505,19 @@ class _EstoquePageState extends State<EstoquePage> {
                                 prefixIcon: Icon(Icons.description),
                               ),
                             ),
-
                             const SizedBox(height: 24),
-
-                            SizedBox(
-                              width: double.infinity,
-                              height: 50,
-                              child: ElevatedButton(
-                                onPressed: _salvarItem,
-                                child: Text(
-                                  _editando
-                                      ? 'Salvar Alterações'
-                                      : 'Salvar Item',
-                                ),
+                            ElevatedButton(
+                              onPressed: _salvarItem,
+                              child: Text(
+                                _editando
+                                    ? 'Salvar Alterações'
+                                    : 'Salvar Item',
                               ),
                             ),
-
                             const SizedBox(height: 12),
-
-                            SizedBox(
-                              width: double.infinity,
-                              height: 50,
-                              child: OutlinedButton(
-                                onPressed: _cancelarFormulario,
-                                child: const Text('Cancelar'),
-                              ),
+                            OutlinedButton(
+                              onPressed: _cancelarFormulario,
+                              child: const Text('Cancelar'),
                             ),
                           ],
                         ),
@@ -559,9 +525,7 @@ class _EstoquePageState extends State<EstoquePage> {
                     ),
                   ),
                 ],
-
                 const SizedBox(height: 24),
-
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(24),
@@ -575,31 +539,29 @@ class _EstoquePageState extends State<EstoquePage> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-
                         const SizedBox(height: 16),
-
                         LayoutBuilder(
                           builder: (context, constraints) {
                             final isWide = constraints.maxWidth > 700;
 
                             final filtroCategoria =
                                 DropdownButtonFormField<String>(
-                                  value: _categoriaFiltro,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Categoria',
-                                    prefixIcon: Icon(Icons.category),
-                                  ),
-                                  hint: const Text('Selecione uma categoria'),
-                                  items: _categorias
-                                      .map(
-                                        (categoria) => DropdownMenuItem(
-                                          value: categoria,
-                                          child: Text(categoria),
-                                        ),
-                                      )
-                                      .toList(),
-                                  onChanged: _selecionarCategoriaFiltro,
-                                );
+                              value: _categoriaFiltro,
+                              decoration: const InputDecoration(
+                                labelText: 'Categoria',
+                                prefixIcon: Icon(Icons.category),
+                              ),
+                              hint: const Text('Selecione uma categoria'),
+                              items: _categorias
+                                  .map(
+                                    (categoria) => DropdownMenuItem(
+                                      value: categoria,
+                                      child: Text(categoria),
+                                    ),
+                                  )
+                                  .toList(),
+                              onChanged: _selecionarCategoriaFiltro,
+                            );
 
                             final campoBusca = TextFormField(
                               controller: _buscaController,
@@ -642,18 +604,14 @@ class _EstoquePageState extends State<EstoquePage> {
                             );
                           },
                         ),
-
                         const SizedBox(height: 12),
-
                         Text(
                           _categoriaFiltro == null
                               ? 'Nenhuma categoria selecionada.'
                               : 'Exibindo ${_itensFiltrados.length} item(ns) da categoria $_categoriaFiltro',
                           style: const TextStyle(fontWeight: FontWeight.w500),
                         ),
-
                         const SizedBox(height: 16),
-
                         if (SessaoService.propriedadeId == null)
                           const Text(
                             'Selecione uma propriedade em foco para gerenciar o estoque.',
@@ -692,19 +650,23 @@ class _EstoquePageState extends State<EstoquePage> {
                                   spacing: 8,
                                   children: [
                                     OutlinedButton(
+                                      style: OutlinedButton.styleFrom(
+                                        minimumSize: const Size(0, 38),
+                                      ),
                                       onPressed: () {
                                         _editarItem(item);
                                       },
                                       child: const Text('Editar'),
                                     ),
                                     ElevatedButton(
-                                      onPressed: () {
-                                        _excluirItem(item);
-                                      },
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.red,
                                         foregroundColor: Colors.white,
+                                        minimumSize: const Size(0, 38),
                                       ),
+                                      onPressed: () {
+                                        _excluirItem(item);
+                                      },
                                       child: const Text('Excluir'),
                                     ),
                                   ],

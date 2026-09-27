@@ -246,6 +246,9 @@ class _ColheitaPageState extends State<ColheitaPage> {
               child: const Text('Cancelar'),
             ),
             ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(0, 44),
+              ),
               onPressed: () async {
                 await _registrarVenda(armazenamento);
                 if (mounted) Navigator.pop(context);
@@ -578,9 +581,7 @@ class _ColheitaPageState extends State<ColheitaPage> {
           const SizedBox(height: 16),
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF064E2F),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
+              minimumSize: const Size(0, 48),
             ),
             onPressed: _safrasDisponiveis.isEmpty ? null : _registrarColheita,
             icon: const Icon(Icons.agriculture),
@@ -651,6 +652,9 @@ class _ColheitaPageState extends State<ColheitaPage> {
                       ),
                     ),
                     OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(0, 38),
+                      ),
                       onPressed: item.quantidadeDisponivel > 0
                           ? () => _abrirVenda(item)
                           : null,

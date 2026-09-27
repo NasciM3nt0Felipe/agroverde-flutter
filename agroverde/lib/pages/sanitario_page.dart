@@ -4,6 +4,7 @@ import '../data/sqlite/rebanho_repository.dart';
 import '../data/sqlite/sanitario_repository.dart';
 import '../domain/entities/animal.dart';
 import '../domain/entities/sanitario_rebanho.dart';
+import '../theme/app_theme.dart';
 
 class SanitarioPage extends StatefulWidget {
   final Animal? animal;
@@ -129,7 +130,7 @@ class _SanitarioPageState extends State<SanitarioPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Controle Sanitário'),
-        backgroundColor: const Color(0xFF064E2F),
+        backgroundColor: AppTheme.primaryGreen,
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
@@ -254,6 +255,9 @@ class _SanitarioPageState extends State<SanitarioPage> {
                         const SizedBox(height: 16),
 
                         ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            minimumSize: const Size(0, 48),
+                          ),
                           onPressed: _salvarRegistro,
                           icon: const Icon(Icons.save),
                           label: const Text('Salvar registro'),
@@ -275,7 +279,7 @@ class _SanitarioPageState extends State<SanitarioPage> {
                 _registrosFiltrados.isEmpty
                     ? const Card(
                         child: Padding(
-                          padding: EdgeInsets.all(24),
+                          padding: const EdgeInsets.all(24),
                           child: Center(
                             child: Text(
                               'Nenhum registro sanitário cadastrado.',
@@ -294,14 +298,16 @@ class _SanitarioPageState extends State<SanitarioPage> {
                             child: ListTile(
                               leading: const Icon(
                                 Icons.medical_services,
-                                color: Color(0xFF064E2F),
+                                color: AppTheme.primaryGreen,
                               ),
                               title: Text(_nomeAnimal(registro.animalId)),
                               subtitle: Text(
                                 'Procedimento: ${registro.procedimento} | Data: ${registro.data} | Medicamento: ${registro.medicamento?.isEmpty ?? true ? '-' : registro.medicamento}',
                               ),
                               trailing: IconButton(
+                                tooltip: 'Excluir',
                                 icon: const Icon(Icons.delete),
+                                color: Colors.red,
                                 onPressed: () {
                                   _excluirRegistro(registro.id!);
                                 },
@@ -341,7 +347,7 @@ class _IndicadorCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              Icon(icone, size: 36, color: const Color(0xFF064E2F)),
+              Icon(icone, size: 36, color: AppTheme.primaryGreen),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(

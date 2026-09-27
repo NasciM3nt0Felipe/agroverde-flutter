@@ -5,6 +5,7 @@ import '../domain/entities/pessoa.dart';
 import '../domain/services/pessoa_service.dart';
 import '../domain/services/sessao_service.dart';
 import '../domain/services/usuario_service.dart';
+import '../theme/app_theme.dart';
 
 /// Tela de gerenciamento do perfil do usuário.
 class PessoaPage extends StatefulWidget {
@@ -214,7 +215,6 @@ class _PessoaPageState extends State<PessoaPage> {
                   Text('Alterar senha'),
                 ],
               ),
-
               content: SizedBox(
                 width: 400,
                 child: Form(
@@ -246,11 +246,9 @@ class _PessoaPageState extends State<PessoaPage> {
                           if (value == null || value.isEmpty) {
                             return 'Informe sua senha atual';
                           }
-
                           return null;
                         },
                       ),
-
                       const SizedBox(height: 16),
 
                       // Nova senha
@@ -277,15 +275,12 @@ class _PessoaPageState extends State<PessoaPage> {
                           if (value == null || value.isEmpty) {
                             return 'Informe a nova senha';
                           }
-
                           if (value.length < 6) {
                             return 'A senha deve possuir pelo menos 6 caracteres';
                           }
-
                           return null;
                         },
                       ),
-
                       const SizedBox(height: 16),
 
                       // Confirmação da nova senha
@@ -312,11 +307,9 @@ class _PessoaPageState extends State<PessoaPage> {
                           if (value == null || value.isEmpty) {
                             return 'Confirme a nova senha';
                           }
-
                           if (value != novaSenhaController.text) {
                             return 'As senhas não coincidem';
                           }
-
                           return null;
                         },
                       ),
@@ -324,9 +317,7 @@ class _PessoaPageState extends State<PessoaPage> {
                   ),
                 ),
               ),
-
               actions: [
-                // Fecha o modal sem realizar alterações.
                 TextButton(
                   onPressed: salvando
                       ? null
@@ -335,9 +326,10 @@ class _PessoaPageState extends State<PessoaPage> {
                         },
                   child: const Text('Cancelar'),
                 ),
-
-                // Solicita a alteração da senha ao UsuarioService.
                 ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(0, 44),
+                  ),
                   onPressed: salvando
                       ? null
                       : () async {
@@ -359,21 +351,17 @@ class _PessoaPageState extends State<PessoaPage> {
                             return;
                           }
 
-                          // O service retorna uma mensagem quando
-                          // alguma regra de alteração não é atendida.
                           if (erro != null) {
                             setDialogState(() {
                               salvando = false;
                             });
 
-                            ScaffoldMessenger.of(
-                              this.context,
-                            ).showSnackBar(SnackBar(content: Text(erro)));
-
+                            ScaffoldMessenger.of(this.context).showSnackBar(
+                              SnackBar(content: Text(erro)),
+                            );
                             return;
                           }
 
-                          // Alteração realizada com sucesso.
                           Navigator.pop(dialogContext);
 
                           if (!mounted) {
@@ -405,7 +393,7 @@ class _PessoaPageState extends State<PessoaPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Meus dados'),
-        backgroundColor: const Color(0xFF064E2F),
+        backgroundColor: AppTheme.primaryGreen,
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
@@ -427,9 +415,7 @@ class _PessoaPageState extends State<PessoaPage> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-
                       const SizedBox(height: 24),
-
                       TextFormField(
                         enabled: _modoEdicao,
                         controller: _nomeController,
@@ -444,9 +430,7 @@ class _PessoaPageState extends State<PessoaPage> {
                           return null;
                         },
                       ),
-
                       const SizedBox(height: 16),
-
                       TextFormField(
                         enabled: _modoEdicao,
                         controller: _cpfController,
@@ -458,17 +442,13 @@ class _PessoaPageState extends State<PessoaPage> {
                           if (value == null || value.isEmpty) {
                             return 'Informe seu CPF';
                           }
-
                           if (!_pessoaService.cpfValido(value)) {
                             return 'CPF deve conter 11 dígitos';
                           }
-
                           return null;
                         },
                       ),
-
                       const SizedBox(height: 16),
-
                       TextFormField(
                         enabled: _modoEdicao,
                         controller: _telefoneController,
@@ -477,9 +457,7 @@ class _PessoaPageState extends State<PessoaPage> {
                           prefixIcon: Icon(Icons.phone),
                         ),
                       ),
-
                       const SizedBox(height: 24),
-
                       const Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
@@ -490,9 +468,7 @@ class _PessoaPageState extends State<PessoaPage> {
                           ),
                         ),
                       ),
-
                       const SizedBox(height: 16),
-
                       TextFormField(
                         enabled: _modoEdicao,
                         controller: _cepController,
@@ -522,17 +498,13 @@ class _PessoaPageState extends State<PessoaPage> {
                           if (value == null || value.isEmpty) {
                             return null;
                           }
-
                           if (!_pessoaService.cepValido(value)) {
                             return 'CEP deve conter 8 dígitos';
                           }
-
                           return null;
                         },
                       ),
-
                       const SizedBox(height: 16),
-
                       TextFormField(
                         enabled: _modoEdicao,
                         controller: _ruaController,
@@ -541,9 +513,7 @@ class _PessoaPageState extends State<PessoaPage> {
                           prefixIcon: Icon(Icons.home),
                         ),
                       ),
-
                       const SizedBox(height: 16),
-
                       TextFormField(
                         enabled: _modoEdicao,
                         controller: _numeroController,
@@ -552,9 +522,7 @@ class _PessoaPageState extends State<PessoaPage> {
                           prefixIcon: Icon(Icons.numbers),
                         ),
                       ),
-
                       const SizedBox(height: 16),
-
                       TextFormField(
                         enabled: _modoEdicao,
                         controller: _bairroController,
@@ -563,9 +531,7 @@ class _PessoaPageState extends State<PessoaPage> {
                           prefixIcon: Icon(Icons.map),
                         ),
                       ),
-
                       const SizedBox(height: 16),
-
                       TextFormField(
                         enabled: _modoEdicao,
                         controller: _cidadeController,
@@ -574,9 +540,7 @@ class _PessoaPageState extends State<PessoaPage> {
                           prefixIcon: Icon(Icons.location_city),
                         ),
                       ),
-
                       const SizedBox(height: 16),
-
                       TextFormField(
                         enabled: _modoEdicao,
                         controller: _estadoController,
@@ -585,35 +549,26 @@ class _PessoaPageState extends State<PessoaPage> {
                           prefixIcon: Icon(Icons.flag),
                         ),
                       ),
-
                       const SizedBox(height: 24),
 
-                      SizedBox(
-                        width: double.infinity,
-                        height: 50,
-                        child: ElevatedButton(
-                          onPressed: _modoEdicao
-                              ? _salvarPerfil
-                              : _habilitarEdicao,
-                          child: Text(
-                            _modoEdicao
-                                ? (_pessoaAtual == null
-                                      ? 'Salvar Perfil'
-                                      : 'Salvar Alterações')
-                                : 'Editar Perfil',
-                          ),
+                      // Botão Salvar / Editar (herda altura 50px e largura total do AppTheme)
+                      ElevatedButton(
+                        onPressed: _modoEdicao ? _salvarPerfil : _habilitarEdicao,
+                        child: Text(
+                          _modoEdicao
+                              ? (_pessoaAtual == null
+                                  ? 'Salvar Perfil'
+                                  : 'Salvar Alterações')
+                              : 'Editar Perfil',
                         ),
                       ),
                       const SizedBox(height: 16),
 
-                      SizedBox(
-                        width: double.infinity,
-                        height: 50,
-                        child: ElevatedButton.icon(
-                          onPressed: _abrirAlteracaoSenha,
-                          icon: const Icon(Icons.settings),
-                          label: const Text('Alterar senha'),
-                        ),
+                      // Botão Alterar Senha (herda altura 50px e largura total do AppTheme)
+                      ElevatedButton.icon(
+                        onPressed: _abrirAlteracaoSenha,
+                        icon: const Icon(Icons.settings),
+                        label: const Text('Alterar senha'),
                       ),
                     ],
                   ),

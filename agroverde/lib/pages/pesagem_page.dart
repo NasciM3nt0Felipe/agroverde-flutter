@@ -4,6 +4,7 @@ import '../data/sqlite/pesagem_repository.dart';
 import '../data/sqlite/rebanho_repository.dart';
 import '../domain/entities/animal.dart';
 import '../domain/entities/pesagem_rebanho.dart';
+import '../theme/app_theme.dart';
 
 class PesagemPage extends StatefulWidget {
   final Animal? animal;
@@ -31,6 +32,14 @@ class _PesagemPageState extends State<PesagemPage> {
   void initState() {
     super.initState();
     _carregarDados();
+  }
+
+  @override
+  void dispose() {
+    _pesoController.dispose();
+    _dataController.dispose();
+    _observacaoController.dispose();
+    super.dispose();
   }
 
   Future<void> _carregarDados() async {
@@ -127,7 +136,7 @@ class _PesagemPageState extends State<PesagemPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Controle de Pesagem'),
-        backgroundColor: const Color(0xFF064E2F),
+        backgroundColor: AppTheme.primaryGreen,
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
@@ -222,6 +231,9 @@ class _PesagemPageState extends State<PesagemPage> {
                         const SizedBox(height: 16),
 
                         ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            minimumSize: const Size(0, 48),
+                          ),
                           onPressed: _salvarPesagem,
                           icon: const Icon(Icons.save),
                           label: const Text('Registrar pesagem'),
@@ -243,7 +255,7 @@ class _PesagemPageState extends State<PesagemPage> {
                 _pesagensFiltradas.isEmpty
                     ? const Card(
                         child: Padding(
-                          padding: EdgeInsets.all(24),
+                          padding: const EdgeInsets.all(24),
                           child: Center(
                             child: Text('Nenhuma pesagem registrada.'),
                           ),
@@ -260,14 +272,16 @@ class _PesagemPageState extends State<PesagemPage> {
                             child: ListTile(
                               leading: const Icon(
                                 Icons.monitor_weight,
-                                color: Color(0xFF064E2F),
+                                color: AppTheme.primaryGreen,
                               ),
                               title: Text(_nomeAnimal(pesagem.animalId)),
                               subtitle: Text(
                                 'Peso: ${pesagem.peso} kg | Data: ${pesagem.data}',
                               ),
                               trailing: IconButton(
+                                tooltip: 'Excluir',
                                 icon: const Icon(Icons.delete),
+                                color: Colors.red,
                                 onPressed: () {
                                   _excluirPesagem(pesagem.id!);
                                 },

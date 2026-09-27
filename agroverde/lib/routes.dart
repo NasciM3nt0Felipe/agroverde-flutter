@@ -37,23 +37,23 @@ class AppRoutes {
   static const String funcionarios = '/funcionarios';
   static const String veiculos = '/veiculos';
 
-  static Map<String, WidgetBuilder> routes = {
-    home: (context) => const HomePage(),
-    login: (context) => const LoginPage(),
-    cadastro: (context) => const CadastroPage(),
-    dashboard: (context) => const DashboardPage(),
-    perfil: (context) => const PessoaPage(),
-    propriedades: (context) => const PropriedadePage(),
-    talhoesSafras: (context) => const TalhoesSafrasPage(),
-    estoque: (context) => const EstoquePage(),
-    financeiro: (context) => const FinanceiroPage(),
-    rebanho: (context) => const RebanhoPage(),
-    pesagem: (context) => const PesagemPage(),
-    vacinacao: (context) => const VacinacaoPage(),
-    sanitario: (context) => const SanitarioPage(),
-    reproducao: (context) => const ReproducaoPage(),
-    colheita: (context) => const ColheitaPage(),
-    AppRoutes.funcionarios: (context) => const FuncionarioPage(),
-    AppRoutes.veiculos: (context) => const VeiculoPage(),
-  };
+  static Map<String, WidgetBuilder> get routes => {
+        home: (context) => const HomePage(),
+        login: (context) => const LoginPage(),
+        cadastro: (context) => const CadastroPage(),
+        dashboard: (context) => const DashboardPage(),
+        perfil: (context) => const PessoaPage(),
+        propriedades: (context) => const PropriedadePage(),
+        talhoesSafras: (context) => const TalhoesSafrasPage(),
+        estoque: (context) => const EstoquePage(),
+        financeiro: (context) => const FinanceiroPage(),
+        rebanho: (context) => const RebanhoPage(),
+        pesagem: (context) => const PesagemPage(),
+        vacinacao: (context) => const VacinacaoPage(),
+        sanitario: (context) => const SanitarioPage(),
+        reproducao: (context) => const ReproducaoPage(),
+        colheita: (context) => const ColheitaPage(),
+        funcionarios: (context) => const FuncionarioPage(),
+        veiculos: (context) => const VeiculoPage(),
+      };
 }

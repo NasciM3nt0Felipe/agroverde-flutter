@@ -1,10 +1,16 @@
-import '../data/sqlite/usuario_repository.dart';
-import '../domain/services/usuario_service.dart';
-import '../domain/services/sessao_service.dart';
-
 import 'package:flutter/material.dart';
 import 'package:agroverde/routes.dart';
 
+// Repositório responsável por solicitar o login à API.
+import '../data/sqlite/usuario_repository.dart';
+
+// Classe que representa os erros retornados pela API.
+import '../data/api/api_exception.dart';
+
+// Serviço responsável por guardar o usuário autenticado.
+import '../domain/services/sessao_service.dart';
+
+/// Tela de autenticação do AgroVerde.
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -13,16 +19,24 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  bool _obscurePassword = true; // Variável para mostrar/ocultar senha
+  // Controla se a senha fica visível ou oculta.
+  bool _obscurePassword = true;
 
+  // Controladores dos campos de e-mail e senha.
   final TextEditingController _emailController = TextEditingController();
+
   final TextEditingController _senhaController = TextEditingController();
 
+  // Repositório utilizado para autenticar o usuário na API.
   final UsuarioRepository _usuarioRepository = UsuarioRepository();
-  final UsuarioService _usuarioService = UsuarioService();
 
+  // Armazena a mensagem de erro exibida na tela.
   String? _erroLogin;
 
+  // Indica se existe uma tentativa de login em andamento.
+  bool _carregando = false;
+
+  /// Libera os controladores quando a tela é destruída.
   @override
   void dispose() {
     _emailController.dispose();
@@ -30,14 +44,21 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
+  /// Realiza o login utilizando a API .NET 8.
   Future<void> _realizarLogin() async {
+    // Impede duas tentativas simultâneas.
+    if (_carregando) return;
+
+    // Obtém os dados digitados pelo usuário.
+    final email = _emailController.text.trim();
+    final senha = _senhaController.text;
+
+    // Limpa a mensagem de erro anterior.
     setState(() {
       _erroLogin = null;
     });
 
-    final email = _emailController.text;
-    final senha = _senhaController.text;
-
+    // Validação básica dos campos.
     if (email.isEmpty || senha.isEmpty) {
       setState(() {
         _erroLogin = 'Informe e-mail e senha.';
@@ -45,35 +66,69 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    final usuario = await _usuarioRepository.buscarPorEmail(email);
+    // Informa que a autenticação está em andamento.
+    setState(() {
+      _carregando = true;
+    });
 
-    if (usuario == null) {
+    try {
+      // Envia as credenciais para a API .NET 8.
+      //
+      // O método autenticar():
+      // 1. Faz POST /api/Auth/login.
+      // 2. Recebe o token JWT e os dados do usuário.
+      // 3. Armazena o token no ApiClient.
+      // 4. Retorna um objeto Usuario.
+      final usuario = await _usuarioRepository.autenticar(
+        email: email,
+        senha: senha,
+      );
+
+      // Verifica se a tela continua ativa.
+      if (!mounted) return;
+
+      // Registra o usuário autenticado na sessão.
+      SessaoService.definirUsuario(usuario);
+
+      // Redireciona para o dashboard.
+      //
+      // pushReplacementNamed substitui a tela atual,
+      // evitando retornar ao login pelo botão Voltar.
+      Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+    } on ApiException catch (e) {
+      // Captura erros conhecidos da API:
+      // credenciais inválidas, falha de conexão etc.
+      if (!mounted) return;
+
       setState(() {
-        _erroLogin = 'E-mail ou senha inválidos.';
+        _erroLogin = e.message;
       });
-      return;
-    }
+    } catch (e) {
+      // Captura erros inesperados para evitar que
+      // o aplicativo seja encerrado.
+      if (!mounted) return;
 
-    final senhaHash = _usuarioService.gerarHashSenha(senha);
+      debugPrint('Erro inesperado no login: $e');
 
-    if (senhaHash != usuario.senha) {
       setState(() {
-        _erroLogin = 'E-mail ou senha inválidos.';
+        _erroLogin = 'Não foi possível realizar o login.';
       });
-      return;
+    } finally {
+      // Finaliza o estado de carregamento,
+      // desde que a tela continue ativa.
+      if (mounted) {
+        setState(() {
+          _carregando = false;
+        });
+      }
     }
-
-    SessaoService.definirUsuario(usuario);
-
-    if (!mounted) return;
-
-    Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
+        // Imagem de fundo original do AgroVerde.
         decoration: const BoxDecoration(
           image: DecorationImage(
             image: AssetImage('assets/images/background-agro.png'),
@@ -81,7 +136,8 @@ class _LoginPageState extends State<LoginPage> {
             alignment: Alignment.center,
           ),
         ),
-        // Janela de login
+
+        // Centraliza a janela de autenticação.
         child: Center(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -93,6 +149,7 @@ class _LoginPageState extends State<LoginPage> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      // Logotipo original com duas folhas.
                       Stack(
                         alignment: Alignment.center,
                         children: [
@@ -114,8 +171,10 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ],
                       ),
+
                       const SizedBox(height: 5),
 
+                      // Nome AgroVerde com cores diferentes.
                       RichText(
                         text: const TextSpan(
                           style: TextStyle(
@@ -144,8 +203,10 @@ class _LoginPageState extends State<LoginPage> {
 
                       const SizedBox(height: 24),
 
+                      // Campo de e-mail.
                       TextField(
                         controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
                         decoration: const InputDecoration(
                           labelText: 'E-mail',
                           border: OutlineInputBorder(),
@@ -155,6 +216,7 @@ class _LoginPageState extends State<LoginPage> {
 
                       const SizedBox(height: 16),
 
+                      // Campo de senha.
                       TextField(
                         controller: _senhaController,
                         obscureText: _obscurePassword,
@@ -162,6 +224,8 @@ class _LoginPageState extends State<LoginPage> {
                           labelText: 'Senha',
                           border: const OutlineInputBorder(),
                           prefixIcon: const Icon(Icons.lock),
+
+                          // Botão para mostrar ou ocultar a senha.
                           suffixIcon: IconButton(
                             icon: Icon(
                               _obscurePassword
@@ -177,6 +241,7 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
 
+                      // Exibe mensagens de erro, quando houver.
                       if (_erroLogin != null) ...[
                         const SizedBox(height: 12),
                         Text(
@@ -191,14 +256,26 @@ class _LoginPageState extends State<LoginPage> {
 
                       const SizedBox(height: 24),
 
-                      // Botão Entrar padronizado pelo tema
+                      // Botão Entrar.
+                      //
+                      // Durante a autenticação, fica desabilitado
+                      // e apresenta um indicador de carregamento.
                       ElevatedButton(
-                        onPressed: _realizarLogin,
-                        child: const Text('Entrar'),
+                        onPressed: _carregando ? null : _realizarLogin,
+                        child: _carregando
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text('Entrar'),
                       ),
 
                       const SizedBox(height: 16),
 
+                      // Separador visual.
                       const Row(
                         children: [
                           Expanded(child: Divider()),
@@ -212,7 +289,10 @@ class _LoginPageState extends State<LoginPage> {
 
                       const SizedBox(height: 16),
 
-                      // Botão Google padronizado pelo tema
+                      // Botão Google original.
+                      //
+                      // A autenticação Google ainda não
+                      // está implementada neste projeto.
                       OutlinedButton(
                         onPressed: () {
                           debugPrint('Login com Google');
@@ -220,10 +300,7 @@ class _LoginPageState extends State<LoginPage> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Image.asset(
-                              'assets/icons/google.png',
-                              height: 24,
-                            ),
+                            Image.asset('assets/icons/google.png', height: 24),
                             const SizedBox(width: 10),
                             const Text('Entrar com Google'),
                           ],
@@ -232,7 +309,7 @@ class _LoginPageState extends State<LoginPage> {
 
                       const SizedBox(height: 12),
 
-                      // Botão Cadastro padronizado pelo tema
+                      // Navegação para o cadastro.
                       OutlinedButton.icon(
                         onPressed: () {
                           Navigator.pushNamed(context, AppRoutes.cadastro);
@@ -243,6 +320,7 @@ class _LoginPageState extends State<LoginPage> {
 
                       const SizedBox(height: 8),
 
+                      // Recuperação de senha ainda não implementada.
                       TextButton(
                         onPressed: () {},
                         child: const Text('Esqueci minha senha'),

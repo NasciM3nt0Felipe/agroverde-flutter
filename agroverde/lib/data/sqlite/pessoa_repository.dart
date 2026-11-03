@@ -1,10 +1,62 @@
 import 'database_helper.dart';
 import '../../domain/entities/pessoa.dart';
+import '../api/api_client.dart';
+import '../api/api_json.dart';
 
 /// Responsável pelas operações de pessoas.
+///
+/// - Perfil do usuário (usuarioId > 0): via API (/api/Perfil). O usuário é
+///   sempre o do token JWT; o app nunca envia o id do usuário.
+/// - Pessoas operacionais de Funcionários (usuarioId == 0): continuam no SQLite.
 class PessoaRepository {
+  static bool _ehPerfil(Pessoa pessoa) => (pessoa.usuarioId ?? 0) > 0;
+
+  static Pessoa _perfilDoJson(Map<String, dynamic> json) {
+    return Pessoa(
+      id: jsonIntOuNulo(json['id']),
+      usuarioId: jsonIntOuNulo(json['usuarioId']),
+      nome: json['nome'] as String?,
+      cpf: json['cpf'] as String?,
+      telefone: json['telefone'] as String?,
+      cep: json['cep'] as String?,
+      rua: json['rua'] as String?,
+      numero: json['numero'] as String?,
+      bairro: json['bairro'] as String?,
+      cidade: json['cidade'] as String?,
+      estado: json['estado'] as String?,
+    );
+  }
+
+  static Map<String, dynamic> _perfilParaJson(Pessoa p) {
+    return {
+      'nome': p.nome,
+      'cpf': p.cpf,
+      'telefone': p.telefone,
+      'cep': p.cep,
+      'rua': p.rua,
+      'numero': p.numero,
+      'bairro': p.bairro,
+      'cidade': p.cidade,
+      'estado': p.estado,
+    };
+  }
+
+  /// PUT cria o perfil na primeira vez e atualiza nas seguintes.
+  static Future<int> _salvarPerfil(Pessoa pessoa) async {
+    final data = await ApiClient.put(
+      '/api/Perfil',
+      corpo: _perfilParaJson(pessoa),
+    );
+
+    return jsonInt((data as Map)['id']);
+  }
+
   /// Insere uma nova pessoa.
   Future<int> inserir(Pessoa pessoa) async {
+    if (_ehPerfil(pessoa)) {
+      return await _salvarPerfil(pessoa);
+    }
+
     final db = await DatabaseHelper.database;
 
     return await db.insert('pessoa', pessoa.toMap());
@@ -12,6 +64,17 @@ class PessoaRepository {
 
   /// Busca a pessoa vinculada ao usuário.
   Future<Pessoa?> buscarPorUsuarioId(int usuarioId) async {
+    if (usuarioId > 0) {
+      // Perfil: a API usa o usuário do token. data == null => ainda sem perfil.
+      final data = await ApiClient.get('/api/Perfil');
+
+      if (data is! Map) {
+        return null;
+      }
+
+      return _perfilDoJson(Map<String, dynamic>.from(data));
+    }
+
     final db = await DatabaseHelper.database;
 
     final resultado = await db.query(
@@ -67,6 +130,12 @@ class PessoaRepository {
 
   /// Atualiza os dados de uma pessoa.
   Future<int> atualizar(Pessoa pessoa) async {
+    if (_ehPerfil(pessoa)) {
+      await _salvarPerfil(pessoa);
+
+      return 1;
+    }
+
     final db = await DatabaseHelper.database;
 
     return await db.update(

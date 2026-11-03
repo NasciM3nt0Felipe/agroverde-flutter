@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../data/api/api_exception.dart';
 import '../data/sqlite/propriedade_repository.dart';
 import '../domain/entities/propriedade.dart';
 import '../domain/services/sessao_service.dart';
@@ -75,10 +76,21 @@ class _PropriedadePageState extends State<PropriedadePage> {
       descricao: _descricaoController.text.trim(),
     );
 
-    if (_editando) {
-      await _propriedadeRepository.atualizar(propriedade);
-    } else {
-      await _propriedadeRepository.inserir(propriedade);
+    try {
+      if (_editando) {
+        await _propriedadeRepository.atualizar(propriedade);
+      } else {
+        await _propriedadeRepository.inserir(propriedade);
+      }
+    } on ApiException catch (erro) {
+      // A API recusou (ex.: área menor que a exigida pelos talhões):
+      // mostra a mensagem e mantém o formulário aberto.
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(erro.message)));
+      return;
     }
 
     await _carregarPropriedades();
@@ -99,7 +111,48 @@ class _PropriedadePageState extends State<PropriedadePage> {
   }
 
   Future<void> _excluirPropriedade(Propriedade propriedade) async {
-    await _propriedadeRepository.excluir(propriedade.id!);
+    final confirmou = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Excluir propriedade'),
+          content: Text(
+            'Deseja realmente excluir a propriedade "${propriedade.nome}"? '
+            'Esta ação não poderá ser desfeita.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Excluir'),
+            ),
+          ],
+        );
+      },
+    );
+
+    // Só exclui com confirmação explícita.
+    if (confirmou != true) return;
+
+    try {
+      await _propriedadeRepository.excluir(propriedade.id!);
+    } on ApiException catch (erro) {
+      // Exclusão bloqueada (ex.: registros vinculados): mostra a mensagem
+      // da API e mantém a propriedade na lista.
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(erro.message)));
+      return;
+    }
 
     if (SessaoService.propriedadeId == propriedade.id) {
       SessaoService.limparPropriedade();

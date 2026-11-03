@@ -3,6 +3,7 @@ import 'package:agroverde/routes.dart';
 
 // Repositório responsável por solicitar o login à API.
 import '../data/sqlite/usuario_repository.dart';
+import '../data/sqlite/propriedade_repository.dart';
 
 // Classe que representa os erros retornados pela API.
 import '../data/api/api_exception.dart';
@@ -29,6 +30,7 @@ class _LoginPageState extends State<LoginPage> {
 
   // Repositório utilizado para autenticar o usuário na API.
   final UsuarioRepository _usuarioRepository = UsuarioRepository();
+  final PropriedadeRepository _propriedadeRepository = PropriedadeRepository();
 
   // Armazena a mensagem de erro exibida na tela.
   String? _erroLogin;
@@ -87,8 +89,23 @@ class _LoginPageState extends State<LoginPage> {
       // Verifica se a tela continua ativa.
       if (!mounted) return;
 
-      // Registra o usuário autenticado na sessão.
+      // Inicia a sessão sem herdar a propriedade de outro login.
+      SessaoService.limparPropriedade();
       SessaoService.definirUsuario(usuario);
+
+      // A propriedade ativa precisa estar definida ANTES do Dashboard abrir.
+      // A API retorna somente as propriedades pertencentes ao token JWT.
+      final propriedades = await _propriedadeRepository.listarPorUsuarioId(
+        SessaoService.usuarioId,
+      );
+
+      if (!mounted) return;
+
+      // Regra: quando existe exatamente uma propriedade, ela fica ativa.
+      // Com zero ou várias, não selecionamos nenhuma automaticamente.
+      if (propriedades.length == 1) {
+        SessaoService.definirPropriedade(propriedades.first);
+      }
 
       // Redireciona para o dashboard.
       //

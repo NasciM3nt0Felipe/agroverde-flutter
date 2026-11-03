@@ -62,6 +62,7 @@ class VeiculoService {
       valor: valor,
       tipo: 'despesa',
       data: data,
+      origemTipo: OrigemLancamento.abastecimento,
     );
 
     await _financeiroRepository.inserir(lancamento);
@@ -80,6 +81,7 @@ class VeiculoService {
       valor: valor,
       tipo: 'despesa',
       data: data,
+      origemTipo: OrigemLancamento.manutencaoVeiculo,
     );
 
     await _financeiroRepository.inserir(lancamento);
@@ -98,6 +100,7 @@ class VeiculoService {
       valor: valor,
       tipo: 'receita',
       data: data,
+      origemTipo: OrigemLancamento.vendaVeiculo,
     );
 
     await _financeiroRepository.inserir(lancamento);

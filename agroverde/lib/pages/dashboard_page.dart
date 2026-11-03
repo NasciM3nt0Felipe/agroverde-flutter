@@ -6,6 +6,7 @@ import '../data/sqlite/talhao_repository.dart';
 import '../data/sqlite/safra_repository.dart';
 import '../data/sqlite/rebanho_repository.dart';
 import '../data/sqlite/financeiro_repository.dart';
+import '../domain/entities/lancamento_financeiro.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -27,6 +28,10 @@ class _DashboardPageState extends State<DashboardPage> {
   double _receitas = 0;
   double _despesas = 0;
   double _saldo = 0;
+
+  // Preenchido quando o Financeiro (API) não pôde ser carregado.
+  // Nesse caso os cards financeiros mostram "Indisponível", nunca R$ 0,00.
+  String? _erroFinanceiro;
 
   bool _carregando = false;
 
@@ -64,6 +69,7 @@ class _DashboardPageState extends State<DashboardPage> {
         _receitas = 0;
         _despesas = 0;
         _saldo = 0;
+        _erroFinanceiro = null;
         _carregando = false;
       });
       return;
@@ -91,14 +97,26 @@ class _DashboardPageState extends State<DashboardPage> {
       propriedadeId,
     );
 
-    final lancamentos = await _financeiroRepository.listarPorPropriedadeId(
-      propriedadeId,
-    );
-
     double receitas = 0;
     double despesas = 0;
 
+    // O Financeiro vem da API: uma falha não deve travar o Dashboard
+    // nem ser exibida como saldo zerado.
+    var lancamentos = <LancamentoFinanceiro>[];
+    String? erroFinanceiro;
+
+    try {
+      lancamentos = await _financeiroRepository.listarPorPropriedadeId(
+        propriedadeId,
+      );
+    } catch (e) {
+      erroFinanceiro = e.toString().replaceAll('Exception: ', '');
+    }
+
     for (final lancamento in lancamentos) {
+      // Pendentes e cancelados não compõem receitas, despesas nem saldo.
+      if (!lancamento.pago) continue;
+
       if (lancamento.tipo.toLowerCase() == 'receita') {
         receitas += lancamento.valor;
       } else {
@@ -115,6 +133,7 @@ class _DashboardPageState extends State<DashboardPage> {
       _receitas = receitas;
       _despesas = despesas;
       _saldo = receitas - despesas;
+      _erroFinanceiro = erroFinanceiro;
       _carregando = false;
     });
   }
@@ -122,6 +141,18 @@ class _DashboardPageState extends State<DashboardPage> {
   /// Formata valores monetários para exibição.
   String _formatarMoeda(double valor) {
     return 'R\$ ${valor.toStringAsFixed(2).replaceAll('.', ',')}';
+  }
+
+  bool get _financeiroIndisponivel => _erroFinanceiro != null;
+
+  /// Valor dos cards financeiros: "Indisponível" quando a API falhou.
+  String _valorFinanceiro(double valor) {
+    return _financeiroIndisponivel ? 'Indisponível' : _formatarMoeda(valor);
+  }
+
+  /// Cor dos cards financeiros (cinza quando indisponível).
+  Color _corFinanceira(Color cor) {
+    return _financeiroIndisponivel ? Colors.grey : cor;
   }
 
   @override
@@ -234,31 +265,69 @@ class _DashboardPageState extends State<DashboardPage> {
                         ),
                         _DashboardCard(
                           titulo: 'Saldo',
-                          valor: _formatarMoeda(_saldo),
-                          icone: Icons.account_balance_wallet,
-                          corIcone: _saldo < 0
-                              ? Colors.red
-                              : const Color(0xFF064E2F),
-                          corValor: _saldo < 0
-                              ? Colors.red
-                              : const Color(0xFF064E2F),
+                          valor: _valorFinanceiro(_saldo),
+                          icone: _financeiroIndisponivel
+                              ? Icons.cloud_off
+                              : Icons.account_balance_wallet,
+                          corIcone: _corFinanceira(
+                            _saldo < 0
+                                ? Colors.red
+                                : const Color(0xFF064E2F),
+                          ),
+                          corValor: _corFinanceira(
+                            _saldo < 0
+                                ? Colors.red
+                                : const Color(0xFF064E2F),
+                          ),
                         ),
                         _DashboardCard(
                           titulo: 'Receitas',
-                          valor: _formatarMoeda(_receitas),
+                          valor: _valorFinanceiro(_receitas),
                           icone: Icons.trending_up,
-                          corIcone: Colors.green,
-                          corValor: Colors.green,
+                          corIcone: _corFinanceira(Colors.green),
+                          corValor: _corFinanceira(Colors.green),
                         ),
                         _DashboardCard(
                           titulo: 'Despesas',
-                          valor: _formatarMoeda(_despesas),
+                          valor: _valorFinanceiro(_despesas),
                           icone: Icons.trending_down,
-                          corIcone: Colors.red,
-                          corValor: Colors.red,
+                          corIcone: _corFinanceira(Colors.red),
+                          corValor: _corFinanceira(Colors.red),
                         ),
                       ],
                     ),
+                    if (_financeiroIndisponivel) ...[
+                      const SizedBox(height: 12),
+                      Card(
+                        color: Colors.orange.shade50,
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.cloud_off,
+                                color: Colors.orange.shade800,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'Financeiro indisponível: $_erroFinanceiro\n'
+                                  'Saldo, receitas e despesas não foram '
+                                  'exibidos para evitar valores incorretos.',
+                                ),
+                              ),
+                              TextButton.icon(
+                                onPressed: _carregando
+                                    ? null
+                                    : _carregarDashboard,
+                                icon: const Icon(Icons.refresh),
+                                label: const Text('Tentar novamente'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 32),
                     const Text(
                       'Acesso rápido',

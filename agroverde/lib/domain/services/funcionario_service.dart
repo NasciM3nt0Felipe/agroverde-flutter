@@ -64,13 +64,44 @@ class FuncionarioService {
 
     final dataBanco = _converterDataBrParaBanco(data);
 
+    // O nome identifica o funcionário (dois funcionários podem ter o
+    // mesmo cargo) e permite detectar a mesma folha lançada duas vezes.
+    final nome = funcionario.nome?.trim() ?? '';
+    final descricao = nome.isEmpty
+        ? 'Folha de pagamento - ${funcionario.cargo}'
+        : 'Folha de pagamento - $nome (${funcionario.cargo})';
+
+    final dataComparacao =
+        dataBanco.length >= 10 ? dataBanco.substring(0, 10) : dataBanco;
+
+    // Evita duplicidade por clique repetido ou novo envio da mesma folha.
+    final existentes = await _financeiroRepository.listarPorOrigem(
+      propriedadeId: funcionario.propriedadeId,
+      origemTipo: OrigemLancamento.folhaPagamento,
+    );
+
+    final jaLancada = existentes.any(
+      (l) =>
+          !l.cancelado &&
+          l.descricao == descricao &&
+          l.data == dataComparacao,
+    );
+
+    if (jaLancada) {
+      throw Exception(
+        'A folha deste funcionário já foi lançada nesta data.',
+      );
+    }
+
+    // safraId não é enviado à API: as safras ainda são locais.
     final lancamento = LancamentoFinanceiro(
       propriedadeId: funcionario.propriedadeId,
-      descricao: 'Folha de pagamento - ${funcionario.cargo}',
+      descricao: descricao,
       valor: funcionario.salario!,
       tipo: 'despesa',
       data: dataBanco,
       safraId: safraId,
+      origemTipo: OrigemLancamento.folhaPagamento,
     );
 
     await _financeiroRepository.inserir(lancamento);

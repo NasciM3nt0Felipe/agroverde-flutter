@@ -142,9 +142,9 @@ class ColheitaService {
       observacao: observacao,
     );
 
-    await _vendaRepository.inserir(venda);
-
-    await _financeiroRepository.inserir(
+    // 1º a receita na API: se a API estiver indisponível, nada é gravado
+    // e a venda pode ser repetida sem duplicar registros locais.
+    final lancamentoId = await _financeiroRepository.inserir(
       LancamentoFinanceiro(
         propriedadeId: propriedadeId,
         descricao: 'Venda de ${armazenamento.produto}',
@@ -152,8 +152,26 @@ class ColheitaService {
         tipo: 'receita',
         data: dataVenda,
         safraId: null,
+        origemTipo: OrigemLancamento.vendaGraos,
       ),
     );
+
+    try {
+      await _vendaRepository.inserir(venda);
+    } catch (e) {
+      // A venda não foi gravada: desfaz a receita para não ficar órfã.
+      try {
+        await _financeiroRepository.excluir(lancamentoId);
+      } catch (_) {
+        throw Exception(
+          'A venda não foi salva (${e.toString().replaceAll('Exception: ', '')}), '
+          'mas a receita ficou registrada no Financeiro. '
+          'Exclua-a manualmente.',
+        );
+      }
+
+      rethrow;
+    }
 
     final novaQuantidade =
         armazenamento.quantidadeDisponivel - quantidadeVendida;

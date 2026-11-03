@@ -21,19 +21,43 @@ class _FinanceiroPageState extends State<FinanceiroPage> {
   String _tipoSelecionado = 'receita';
   int? _idEditando;
 
+  // Estado da comunicação com a API.
+  bool _carregando = false;
+  bool _salvando = false;
+  String? _erroCarregamento;
+
+  static const Color _verde = Color(0xFF064E2F);
+
+  // Apenas lançamentos pagos compõem receitas, despesas e saldo:
+  // pendentes e cancelados não alteram o saldo disponível.
   double get totalReceitas {
     return _lancamentos
-        .where((l) => l.tipo == 'receita')
+        .where((l) => l.pago && l.tipo == 'receita')
         .fold(0, (total, l) => total + l.valor);
   }
 
   double get totalDespesas {
     return _lancamentos
-        .where((l) => l.tipo == 'despesa')
+        .where((l) => l.pago && l.tipo == 'despesa')
         .fold(0, (total, l) => total + l.valor);
   }
 
   double get saldo => totalReceitas - totalDespesas;
+
+  // Valores pendentes, exibidos apenas como informação.
+  double get receitasPendentes {
+    return _lancamentos
+        .where((l) => l.pendente && l.tipo == 'receita')
+        .fold(0, (total, l) => total + l.valor);
+  }
+
+  double get despesasPendentes {
+    return _lancamentos
+        .where((l) => l.pendente && l.tipo == 'despesa')
+        .fold(0, (total, l) => total + l.valor);
+  }
+
+  bool get _financeiroIndisponivel => _erroCarregamento != null;
 
   @override
   void initState() {
@@ -49,25 +73,54 @@ class _FinanceiroPageState extends State<FinanceiroPage> {
   }
 
   /// Carrega os lançamentos financeiros da propriedade em foco.
+  ///
+  /// Em caso de falha, não exibe totais zerados como se fossem válidos:
+  /// a tela passa a mostrar o estado de indisponibilidade.
   Future<void> _carregarLancamentos() async {
     final propriedadeId = SessaoService.propriedadeId;
 
     if (propriedadeId == null) {
       setState(() {
         _lancamentos = [];
+        _erroCarregamento = null;
       });
       return;
     }
 
-    final dados = await _repository.listarPorPropriedadeId(propriedadeId);
-
     setState(() {
-      _lancamentos = dados;
+      _carregando = true;
     });
+
+    try {
+      final dados = await _repository.listarPorPropriedadeId(propriedadeId);
+
+      if (!mounted) return;
+
+      setState(() {
+        _lancamentos = dados;
+        _erroCarregamento = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _lancamentos = [];
+        _erroCarregamento = _mensagemErro(e);
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _carregando = false;
+        });
+      }
+    }
   }
 
   /// Salva ou atualiza um lançamento financeiro.
   Future<void> _salvarLancamento() async {
+    // Evita lançamentos duplicados por clique repetido.
+    if (_salvando) return;
+
     final propriedadeId = SessaoService.propriedadeId;
 
     if (propriedadeId == null) {
@@ -100,13 +153,32 @@ class _FinanceiroPageState extends State<FinanceiroPage> {
       safraId: null,
     );
 
-    if (_idEditando == null) {
-      await _repository.inserir(lancamento);
-      _mostrarMensagem('Lançamento cadastrado com sucesso.');
-    } else {
-      await _repository.atualizar(lancamento);
-      _mostrarMensagem('Lançamento atualizado com sucesso.');
+    setState(() {
+      _salvando = true;
+    });
+
+    try {
+      if (_idEditando == null) {
+        await _repository.inserir(lancamento);
+        _mostrarMensagem('Lançamento cadastrado com sucesso.');
+      } else {
+        await _repository.atualizar(lancamento);
+        _mostrarMensagem('Lançamento atualizado com sucesso.');
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      _mostrarMensagem(_mensagemErro(e));
+      return;
+    } finally {
+      if (mounted) {
+        setState(() {
+          _salvando = false;
+        });
+      }
     }
+
+    if (!mounted) return;
 
     _limparCampos();
     await _carregarLancamentos();
@@ -114,6 +186,13 @@ class _FinanceiroPageState extends State<FinanceiroPage> {
 
   /// Preenche o formulário para edição do lançamento.
   void _editarLancamento(LancamentoFinanceiro lancamento) {
+    if (!lancamento.permiteEditar) {
+      _mostrarMensagem(
+        'Lançamentos automáticos são alterados no módulo de origem.',
+      );
+      return;
+    }
+
     setState(() {
       _idEditando = lancamento.id;
       _descricaoController.text = lancamento.descricao;
@@ -123,9 +202,75 @@ class _FinanceiroPageState extends State<FinanceiroPage> {
   }
 
   /// Remove um lançamento financeiro e atualiza a listagem.
-  Future<void> _excluirLancamento(int id) async {
-    await _repository.excluir(id);
+  Future<void> _excluirLancamento(LancamentoFinanceiro lancamento) async {
+    if (_salvando || lancamento.id == null) return;
+
+    if (!lancamento.permiteExcluir) {
+      _mostrarMensagem(
+        'Este lançamento pertence ao módulo de origem e não pode ser excluído.',
+      );
+      return;
+    }
+
+    // Lançamento automático: avisa que o registro de origem não muda.
+    if (lancamento.automatico) {
+      final confirmado = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) {
+          return AlertDialog(
+            title: const Text('Excluir lançamento automático'),
+            content: Text(
+              'Este lançamento foi gerado por '
+              '"${OrigemLancamento.rotulo(lancamento.origemTipo!)}".\n\n'
+              'Apenas o lançamento financeiro será excluído; o registro no '
+              'módulo de origem não será alterado. Deseja continuar?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                child: const Text('Excluir'),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (confirmado != true || !mounted) return;
+    }
+
+    setState(() {
+      _salvando = true;
+    });
+
+    try {
+      await _repository.excluir(lancamento.id!);
+    } catch (e) {
+      if (!mounted) return;
+
+      _mostrarMensagem(_mensagemErro(e));
+      return;
+    } finally {
+      if (mounted) {
+        setState(() {
+          _salvando = false;
+        });
+      }
+    }
+
+    if (!mounted) return;
+
+    if (_idEditando == lancamento.id) {
+      _limparCampos();
+    }
+
     await _carregarLancamentos();
+
+    if (!mounted) return;
+
     _mostrarMensagem('Lançamento excluído.');
   }
 
@@ -137,6 +282,11 @@ class _FinanceiroPageState extends State<FinanceiroPage> {
       _valorController.clear();
       _tipoSelecionado = 'receita';
     });
+  }
+
+  /// Extrai a mensagem de erro (ApiException ou validação) para exibição.
+  String _mensagemErro(Object erro) {
+    return erro.toString().replaceAll('Exception: ', '');
   }
 
   /// Exibe mensagens informativas ao usuário.
@@ -151,15 +301,63 @@ class _FinanceiroPageState extends State<FinanceiroPage> {
     return 'R\$ ${valor.toStringAsFixed(2).replaceAll('.', ',')}';
   }
 
+  /// Formata aaaa-MM-dd como dd/MM/aaaa.
+  String _formatarData(String data) {
+    if (data.length < 10) return data;
+
+    final partes = data.substring(0, 10).split('-');
+
+    if (partes.length != 3) return data;
+
+    return '${partes[2]}/${partes[1]}/${partes[0]}';
+  }
+
+  /// Valor exibido nos indicadores (indisponível quando a API falhou).
+  String _valorIndicador(double valor) {
+    return _financeiroIndisponivel ? 'Indisponível' : _formatarValor(valor);
+  }
+
+  /// Cor e rótulo do status do lançamento.
+  Color _corStatus(LancamentoFinanceiro item) {
+    if (item.cancelado) return Colors.grey;
+    if (item.pendente) return Colors.orange.shade800;
+    return Colors.green.shade700;
+  }
+
+  String _rotuloStatus(LancamentoFinanceiro item) {
+    if (item.cancelado) return 'Cancelado';
+    if (item.pendente) return 'Pendente';
+    return 'Pago';
+  }
+
   @override
   Widget build(BuildContext context) {
     final nomePropriedade = SessaoService.propriedadeNome;
+    final semPropriedade = SessaoService.propriedadeId == null;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Financeiro'),
-        backgroundColor: const Color(0xFF064E2F),
+        backgroundColor: _verde,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            tooltip: 'Atualizar lançamentos',
+            onPressed: _carregando || semPropriedade
+                ? null
+                : _carregarLancamentos,
+            icon: _carregando
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.refresh),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -181,27 +379,42 @@ class _FinanceiroPageState extends State<FinanceiroPage> {
                   style: const TextStyle(fontSize: 15, color: Colors.grey),
                 ),
                 const SizedBox(height: 20),
+                if (_financeiroIndisponivel) ...[
+                  _AvisoIndisponivel(
+                    mensagem: _erroCarregamento!,
+                    aoTentarNovamente: _carregando ? null : _carregarLancamentos,
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 Wrap(
                   spacing: 16,
                   runSpacing: 16,
                   children: [
                     _IndicadorCard(
                       titulo: 'Receitas',
-                      valor: _formatarValor(totalReceitas),
+                      valor: _valorIndicador(totalReceitas),
                       icone: Icons.trending_up,
                     ),
                     _IndicadorCard(
                       titulo: 'Despesas',
-                      valor: _formatarValor(totalDespesas),
+                      valor: _valorIndicador(totalDespesas),
                       icone: Icons.trending_down,
                     ),
                     _IndicadorCard(
                       titulo: 'Saldo',
-                      valor: _formatarValor(saldo),
+                      valor: _valorIndicador(saldo),
                       icone: Icons.account_balance_wallet,
                     ),
                   ],
                 ),
+                if (!_financeiroIndisponivel && !semPropriedade) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'Os totais consideram apenas lançamentos pagos.'
+                    '${receitasPendentes > 0 || despesasPendentes > 0 ? ' Pendentes: receitas ${_formatarValor(receitasPendentes)} · despesas ${_formatarValor(despesasPendentes)}.' : ''}',
+                    style: const TextStyle(fontSize: 13, color: Colors.grey),
+                  ),
+                ],
                 const SizedBox(height: 24),
                 Card(
                   elevation: 3,
@@ -222,7 +435,7 @@ class _FinanceiroPageState extends State<FinanceiroPage> {
                         const SizedBox(height: 16),
                         TextField(
                           controller: _descricaoController,
-                          enabled: SessaoService.propriedadeId != null,
+                          enabled: !semPropriedade,
                           decoration: const InputDecoration(
                             labelText: 'Descrição',
                             border: OutlineInputBorder(),
@@ -231,7 +444,7 @@ class _FinanceiroPageState extends State<FinanceiroPage> {
                         const SizedBox(height: 12),
                         TextField(
                           controller: _valorController,
-                          enabled: SessaoService.propriedadeId != null,
+                          enabled: !semPropriedade,
                           keyboardType: TextInputType.number,
                           decoration: const InputDecoration(
                             labelText: 'Valor',
@@ -255,7 +468,7 @@ class _FinanceiroPageState extends State<FinanceiroPage> {
                               child: Text('Despesa'),
                             ),
                           ],
-                          onChanged: SessaoService.propriedadeId == null
+                          onChanged: semPropriedade
                               ? null
                               : (value) {
                                   setState(() {
@@ -270,12 +483,22 @@ class _FinanceiroPageState extends State<FinanceiroPage> {
                               style: ElevatedButton.styleFrom(
                                 minimumSize: const Size(0, 45),
                               ),
-                              onPressed: SessaoService.propriedadeId == null
+                              onPressed: semPropriedade || _salvando
                                   ? null
                                   : _salvarLancamento,
-                              icon: Icon(
-                                _idEditando == null ? Icons.save : Icons.edit,
-                              ),
+                              icon: _salvando
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : Icon(
+                                      _idEditando == null
+                                          ? Icons.save
+                                          : Icons.edit,
+                                    ),
                               label: Text(
                                 _idEditando == null ? 'Cadastrar' : 'Atualizar',
                               ),
@@ -286,7 +509,7 @@ class _FinanceiroPageState extends State<FinanceiroPage> {
                                 style: OutlinedButton.styleFrom(
                                   minimumSize: const Size(0, 45),
                                 ),
-                                onPressed: _limparCampos,
+                                onPressed: _salvando ? null : _limparCampos,
                                 child: const Text('Cancelar edição'),
                               ),
                             ],
@@ -302,93 +525,243 @@ class _FinanceiroPageState extends State<FinanceiroPage> {
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
-                _GraficoFinanceiro(
-                  receitas: totalReceitas,
-                  despesas: totalDespesas,
-                ),
+                _financeiroIndisponivel
+                    ? const Card(
+                        child: Padding(
+                          padding: EdgeInsets.all(24),
+                          child: Center(
+                            child: Text('Gráfico indisponível no momento.'),
+                          ),
+                        ),
+                      )
+                    : _GraficoFinanceiro(
+                        receitas: totalReceitas,
+                        despesas: totalDespesas,
+                      ),
                 const SizedBox(height: 24),
                 const Text(
                   'Lançamentos',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
-                SessaoService.propriedadeId == null
-                    ? const Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Center(
-                            child: Text(
-                              'Selecione uma propriedade para visualizar os lançamentos.',
-                            ),
-                          ),
-                        ),
-                      )
-                    : _lancamentos.isEmpty
-                        ? const Card(
-                            child: Padding(
-                              padding: const EdgeInsets.all(24),
-                              child: Center(
-                                child: Text('Nenhum lançamento cadastrado.'),
-                              ),
-                            ),
-                          )
-                        : ListView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: _lancamentos.length,
-                            itemBuilder: (context, index) {
-                              final item = _lancamentos[index];
-
-                              return Card(
-                                child: ListTile(
-                                  leading: Icon(
-                                    item.tipo == 'receita'
-                                        ? Icons.arrow_upward
-                                        : Icons.arrow_downward,
-                                    color: item.tipo == 'receita'
-                                        ? Colors.green
-                                        : Colors.red,
-                                  ),
-                                  title: Text(item.descricao),
-                                  subtitle: Text(
-                                    item.tipo == 'receita'
-                                        ? 'Receita'
-                                        : 'Despesa',
-                                  ),
-                                  trailing: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        _formatarValor(item.valor),
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      IconButton(
-                                        tooltip: 'Editar',
-                                        icon: const Icon(Icons.edit),
-                                        color: const Color(0xFF064E2F),
-                                        onPressed: () {
-                                          _editarLancamento(item);
-                                        },
-                                      ),
-                                      IconButton(
-                                        tooltip: 'Excluir',
-                                        icon: const Icon(Icons.delete),
-                                        color: Colors.red,
-                                        onPressed: () {
-                                          _excluirLancamento(item.id!);
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
+                _construirLista(semPropriedade),
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  /// Lista de lançamentos com status, origem e ações permitidas.
+  Widget _construirLista(bool semPropriedade) {
+    if (semPropriedade) {
+      return const Card(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Center(
+            child: Text(
+              'Selecione uma propriedade para visualizar os lançamentos.',
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (_financeiroIndisponivel) {
+      return const Card(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Center(
+            child: Text(
+              'Não foi possível carregar os lançamentos. '
+              'Use o botão de atualizar para tentar novamente.',
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (_carregando && _lancamentos.isEmpty) {
+      return const Card(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      );
+    }
+
+    if (_lancamentos.isEmpty) {
+      return const Card(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Center(child: Text('Nenhum lançamento cadastrado.')),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: _lancamentos.length,
+      itemBuilder: (context, index) {
+        final item = _lancamentos[index];
+        final receita = item.tipo == 'receita';
+        final corStatus = _corStatus(item);
+
+        final detalhes = <String>[
+          receita ? 'Receita' : 'Despesa',
+          if (item.data.isNotEmpty) _formatarData(item.data),
+          if (item.automatico)
+            'Automático: ${OrigemLancamento.rotulo(item.origemTipo!)}',
+        ];
+
+        return Card(
+          // Pendentes e cancelados ficam visualmente atenuados.
+          color: item.pago ? null : Colors.grey.shade100,
+          child: ListTile(
+            leading: Icon(
+              receita ? Icons.arrow_upward : Icons.arrow_downward,
+              color: item.pago
+                  ? (receita ? Colors.green : Colors.red)
+                  : Colors.grey,
+            ),
+            title: Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    item.descricao,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                _EtiquetaStatus(rotulo: _rotuloStatus(item), cor: corStatus),
+                if (item.automatico) ...[
+                  const SizedBox(width: 6),
+                  const Tooltip(
+                    message: 'Lançamento gerado automaticamente',
+                    child: Icon(Icons.bolt, size: 18, color: _verde),
+                  ),
+                ],
+              ],
+            ),
+            subtitle: Text(detalhes.join(' · ')),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _formatarValor(item.valor),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: item.pago ? null : Colors.grey.shade700,
+                    decoration: item.cancelado
+                        ? TextDecoration.lineThrough
+                        : null,
+                  ),
+                ),
+                // Só oferece as ações que a API permite.
+                if (item.permiteEditar)
+                  IconButton(
+                    tooltip: 'Editar',
+                    icon: const Icon(Icons.edit),
+                    color: _verde,
+                    onPressed: _salvando
+                        ? null
+                        : () {
+                            _editarLancamento(item);
+                          },
+                  ),
+                if (item.permiteExcluir)
+                  IconButton(
+                    tooltip: 'Excluir',
+                    icon: const Icon(Icons.delete),
+                    color: Colors.red,
+                    onPressed: _salvando
+                        ? null
+                        : () {
+                            _excluirLancamento(item);
+                          },
+                  ),
+                if (!item.permiteEditar && !item.permiteExcluir)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 12),
+                    child: Tooltip(
+                      message:
+                          'Mantido pelo módulo de origem; não pode ser '
+                          'alterado nem excluído aqui.',
+                      child: Icon(Icons.lock_outline, color: Colors.grey),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Etiqueta compacta com o status do lançamento.
+class _EtiquetaStatus extends StatelessWidget {
+  final String rotulo;
+  final Color cor;
+
+  const _EtiquetaStatus({required this.rotulo, required this.cor});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: cor.withValues(alpha: 0.12),
+        border: Border.all(color: cor),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        rotulo,
+        style: TextStyle(
+          fontSize: 12,
+          color: cor,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+/// Aviso exibido quando o Financeiro não pôde ser carregado.
+class _AvisoIndisponivel extends StatelessWidget {
+  final String mensagem;
+  final VoidCallback? aoTentarNovamente;
+
+  const _AvisoIndisponivel({
+    required this.mensagem,
+    required this.aoTentarNovamente,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: Colors.orange.shade50,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Icon(Icons.cloud_off, color: Colors.orange.shade800),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Financeiro indisponível: $mensagem\n'
+                'Os valores não foram exibidos para evitar informações incorretas.',
+              ),
+            ),
+            const SizedBox(width: 12),
+            TextButton.icon(
+              onPressed: aoTentarNovamente,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Tentar novamente'),
+            ),
+          ],
         ),
       ),
     );

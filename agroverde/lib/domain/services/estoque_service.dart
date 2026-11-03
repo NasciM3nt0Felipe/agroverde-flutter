@@ -61,12 +61,18 @@ class EstoqueService {
     }
 
     if (item.id == null) {
-      await _repository.inserir(item);
-
+      // ATENÇÃO: enquanto o Estoque do app grava no SQLite, a despesa da
+      // compra precisa ser criada aqui. Quando o Estoque passar a usar
+      // /api/Estoque, REMOVER este lançamento: a API já gera a despesa
+      // (origem "Estoque") e haveria duplicidade.
       final valorTotal = item.quantidadeInicial * item.precoMedioUnitario;
 
+      int? lancamentoId;
+
+      // 1º a despesa na API: se a API estiver indisponível, nada é gravado
+      // e o usuário pode tentar de novo sem duplicar o item local.
       if (valorTotal > 0) {
-        await _financeiroRepository.inserir(
+        lancamentoId = await _financeiroRepository.inserir(
           LancamentoFinanceiro(
             propriedadeId: item.propriedadeId,
             descricao: 'Compra de ${item.nome}',
@@ -74,11 +80,38 @@ class EstoqueService {
             tipo: 'despesa',
             data: DateTime.now().toIso8601String(),
             safraId: null,
+            origemTipo: OrigemLancamento.compraEstoque,
           ),
         );
       }
+
+      try {
+        await _repository.inserir(item);
+      } catch (e) {
+        // O item não foi gravado: desfaz a despesa para não ficar órfã.
+        await _desfazerLancamento(lancamentoId, e);
+        rethrow;
+      }
     } else {
       await _repository.atualizar(item);
+    }
+  }
+
+  /// Exclui um lançamento criado antes de uma gravação local que falhou.
+  ///
+  /// Se nem a exclusão for possível, informa o usuário para que remova
+  /// o lançamento manualmente no Financeiro.
+  Future<void> _desfazerLancamento(int? lancamentoId, Object erroOriginal) async {
+    if (lancamentoId == null) return;
+
+    try {
+      await _financeiroRepository.excluir(lancamentoId);
+    } catch (_) {
+      throw Exception(
+        'O item não foi salvo (${erroOriginal.toString().replaceAll('Exception: ', '')}), '
+        'mas a despesa da compra ficou registrada no Financeiro. '
+        'Exclua-a manualmente.',
+      );
     }
   }
 

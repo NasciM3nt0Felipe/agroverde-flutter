@@ -1,9 +1,13 @@
+import '../../data/sqlite/colheita_repository.dart';
+import '../../data/sqlite/estoque_repository.dart';
 import '../../data/sqlite/safra_repository.dart';
 import '../entities/safra.dart';
 
 /// Responsável pelas regras de negócio das safras.
 class SafraService {
   final SafraRepository _repository = SafraRepository();
+  final EstoqueRepository _estoqueRepository = EstoqueRepository();
+  final ColheitaRepository _colheitaRepository = ColheitaRepository();
 
   /// Lista as safras do talhão.
   Future<List<Safra>> listarPorTalhaoId(int talhaoId) async {
@@ -44,7 +48,23 @@ class SafraService {
   }
 
   /// Remove uma safra.
+  ///
+  /// Consumos de insumos e colheitas ainda ficam no banco local, por isso o
+  /// vínculo é verificado aqui; a API verifica os vínculos que ela possui.
   Future<void> excluir(int id) async {
+    if (await _estoqueRepository.existeConsumoPorSafra(id)) {
+      throw Exception(
+        'Não é possível excluir a safra porque ela possui consumo de insumos '
+        'registrado (plantio, fertilização ou pulverização).',
+      );
+    }
+
+    if (await _colheitaRepository.existeColheitaPorSafra(id)) {
+      throw Exception(
+        'Não é possível excluir a safra porque ela possui colheita registrada.',
+      );
+    }
+
     await _repository.excluir(id);
   }
 }

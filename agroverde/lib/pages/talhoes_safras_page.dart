@@ -94,20 +94,44 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
       return;
     }
 
-    final lista = await _talhaoService.listarPorPropriedadeId(propriedadeId);
+    try {
+      final lista = await _talhaoService.listarPorPropriedadeId(propriedadeId);
 
-    setState(() {
-      _talhoes = lista;
-    });
+      if (!mounted) return;
+
+      setState(() {
+        _talhoes = lista;
+      });
+    } catch (e) {
+      _mostrarErro(e);
+    }
   }
 
   /// Carrega as safras vinculadas ao talhão selecionado.
   Future<void> _carregarSafras(int talhaoId) async {
-    final lista = await _safraService.listarPorTalhaoId(talhaoId);
+    try {
+      final lista = await _safraService.listarPorTalhaoId(talhaoId);
 
-    setState(() {
-      _safras = lista;
-    });
+      if (!mounted) return;
+
+      setState(() {
+        _safras = lista;
+      });
+    } catch (e) {
+      _mostrarErro(e);
+    }
+  }
+
+  /// Exibe erros da API (regras, permissão ou conexão).
+  void _mostrarErro(Object erro) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: Colors.red,
+        content: Text(erro.toString().replaceAll('Exception: ', '')),
+      ),
+    );
   }
 
   /// Exibe o seletor de datas e preenche o campo informado.
@@ -257,7 +281,12 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
 
   /// Remove um talhão e atualiza a listagem.
   Future<void> _excluirTalhao(Talhao talhao) async {
-    await _talhaoService.excluir(talhao.id!);
+    try {
+      await _talhaoService.excluir(talhao.id!);
+    } catch (e) {
+      _mostrarErro(e);
+      return;
+    }
 
     if (_talhaoSelecionado?.id == talhao.id) {
       setState(() {
@@ -277,7 +306,12 @@ class _TalhoesSafrasPageState extends State<TalhoesSafrasPage> {
 
   /// Remove uma safra e atualiza a listagem.
   Future<void> _excluirSafra(Safra safra) async {
-    await _safraService.excluir(safra.id!);
+    try {
+      await _safraService.excluir(safra.id!);
+    } catch (e) {
+      _mostrarErro(e);
+      return;
+    }
 
     await _carregarSafras(_talhaoSelecionado!.id!);
 

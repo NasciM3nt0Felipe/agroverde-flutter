@@ -1,141 +1,128 @@
 import '../../domain/entities/safra.dart';
-import 'database_helper.dart';
+import '../api/api_client.dart';
+import '../api/api_exception.dart';
+import '../api/api_json.dart';
 
-/// Repository responsável pelas operações da entidade Safra.
+/// Responsável pelas operações de safras — via API (/api/Safra).
 ///
-/// A Safra representa um ciclo produtivo dentro de um Talhão.
+/// A API valida se o talhão existe e pertence a uma propriedade do usuário,
+/// impede transferir a safra para outra propriedade e mantém a regra de uma
+/// safra ativa por talhão. Nomes e assinaturas públicas são os mesmos da
+/// versão SQLite.
 ///
 /// Fluxo:
 /// Propriedade -> Talhão -> Safra
 class SafraRepository {
-  /// Insere uma nova safra no banco.
-  ///
-  /// Retorna o ID gerado pelo SQLite.
-  Future<int> inserir(Safra safra) async {
-    final db = await DatabaseHelper.database;
+  static const String _caminho = '/api/Safra';
 
-    return await db.insert('safra', safra.toMap());
+  static String? _textoOuNulo(String? valor) {
+    if (valor == null || valor.trim().isEmpty) return null;
+
+    return valor.trim();
   }
 
-  /// Lista todas as safras vinculadas a um talhão específico.
-  ///
-  /// Usado para mostrar somente as safras do talhão selecionado.
-  Future<List<Safra>> listarPorTalhaoId(int talhaoId) async {
-    final db = await DatabaseHelper.database;
-
-    final maps = await db.query(
-      'safra',
-      where: 'talhao_id = ?',
-      whereArgs: [talhaoId],
-      orderBy: 'id DESC',
+  static Safra _doJson(Map<String, dynamic> json) {
+    return Safra(
+      id: jsonIntOuNulo(json['id']),
+      talhaoId: jsonInt(json['talhaoId']),
+      nome: (json['nome'] ?? '') as String,
+      cultura: (json['cultura'] ?? '') as String,
+      variedade: json['variedade'] as String?,
+      dataPlantio: (json['dataPlantio'] ?? '') as String,
+      dataColheitaPrevista: json['dataColheitaPrevista'] as String?,
+      dataColheitaReal: json['dataColheitaReal'] as String?,
+      producaoEstimada: jsonDoubleOuNulo(json['producaoEstimada']),
+      producaoObtida: jsonDoubleOuNulo(json['producaoObtida']),
+      status: (json['status'] ?? 'Planejada') as String,
+      observacao: json['observacao'] as String?,
     );
-
-    return maps.map((map) => Safra.fromMap(map)).toList();
   }
 
-  /// Lista as safras que já podem ser colhidas.
+  static Map<String, dynamic> _paraJson(Safra safra) {
+    return {
+      'talhaoId': safra.talhaoId,
+      'nome': safra.nome.trim(),
+      'cultura': safra.cultura.trim(),
+      'variedade': _textoOuNulo(safra.variedade),
+      'dataPlantio': safra.dataPlantio.trim(),
+      'dataColheitaPrevista': _textoOuNulo(safra.dataColheitaPrevista),
+      'dataColheitaReal': _textoOuNulo(safra.dataColheitaReal),
+      'producaoEstimada': safra.producaoEstimada,
+      'producaoObtida': safra.producaoObtida,
+      'status': safra.status,
+      'observacao': _textoOuNulo(safra.observacao),
+    };
+  }
+
+  /// Insere uma nova safra e devolve o ID gerado pela API.
+  Future<int> inserir(Safra safra) async {
+    final data = await ApiClient.post(_caminho, corpo: _paraJson(safra));
+
+    return jsonInt((data as Map)['id']);
+  }
+
+  /// Lista as safras de um talhão (mais recentes primeiro).
+  Future<List<Safra>> listarPorTalhaoId(int talhaoId) async {
+    final data = await ApiClient.get('$_caminho/talhao/$talhaoId');
+
+    return jsonLista(data).map(_doJson).toList();
+  }
+
+  /// Lista as safras disponíveis para colheita na propriedade.
   ///
-  /// Critérios:
+  /// Critérios (aplicados pela API):
   /// - possuem data de colheita prevista menor ou igual à data atual;
   /// - ainda não estão com status Colhida ou Finalizada.
   Future<List<Safra>> listarDisponiveisParaColheitaPorPropriedade(
     int propriedadeId,
   ) async {
-    final db = await DatabaseHelper.database;
-
-    final hoje = DateTime.now().toIso8601String().substring(0, 10);
-
-    final maps = await db.rawQuery(
-      '''
-    SELECT s.*
-    FROM safra s
-    INNER JOIN talhao t ON t.id = s.talhao_id
-    WHERE t.propriedade_id = ?
-      AND s.data_colheita_prevista IS NOT NULL
-      AND s.data_colheita_prevista != ''
-      AND (
-        substr(s.data_colheita_prevista, 7, 4) || '-' ||
-        substr(s.data_colheita_prevista, 4, 2) || '-' ||
-        substr(s.data_colheita_prevista, 1, 2)
-      ) <= ?
-      AND s.status NOT IN (?, ?)
-    ORDER BY (
-      substr(s.data_colheita_prevista, 7, 4) || '-' ||
-      substr(s.data_colheita_prevista, 4, 2) || '-' ||
-      substr(s.data_colheita_prevista, 1, 2)
-    ) ASC
-    ''',
-      [propriedadeId, hoje, 'Colhida', 'Finalizada'],
+    final data = await ApiClient.get(
+      '$_caminho/disponiveis-colheita/propriedade/$propriedadeId',
     );
 
-    return maps.map((map) => Safra.fromMap(map)).toList();
+    return jsonLista(data).map(_doJson).toList();
   }
 
   /// Verifica se já existe uma safra ativa no talhão.
   ///
-  /// Status considerados ativos:
-  /// - Planejada
-  /// - Em andamento
-  ///
-  /// O parâmetro ignorarSafraId é usado na edição,
-  /// para não comparar a safra com ela mesma.
+  /// Status considerados ativos: Planejada e Em andamento.
+  /// O parâmetro ignorarSafraId é usado na edição. A API também valida.
   Future<bool> existeSafraAtiva(int talhaoId, {int? ignorarSafraId}) async {
-    final db = await DatabaseHelper.database;
+    final safras = await listarPorTalhaoId(talhaoId);
 
-    String where = 'talhao_id = ? AND status IN (?, ?)';
-
-    final whereArgs = <dynamic>[talhaoId, 'Planejada', 'Em andamento'];
-
-    if (ignorarSafraId != null) {
-      where += ' AND id != ?';
-      whereArgs.add(ignorarSafraId);
-    }
-
-    final maps = await db.query(
-      'safra',
-      where: where,
-      whereArgs: whereArgs,
-      limit: 1,
+    return safras.any(
+      (s) =>
+          s.id != ignorarSafraId &&
+          (s.status == 'Planejada' || s.status == 'Em andamento'),
     );
-
-    return maps.isNotEmpty;
   }
 
   /// Atualiza os dados de uma safra existente.
-  ///
-  /// A safra é localizada pelo seu ID.
   Future<int> atualizar(Safra safra) async {
-    final db = await DatabaseHelper.database;
+    await ApiClient.put('$_caminho/${safra.id}', corpo: _paraJson(safra));
 
-    return await db.update(
-      'safra',
-      safra.toMap(),
-      where: 'id = ?',
-      whereArgs: [safra.id],
-    );
+    return 1;
   }
 
-  /// Exclui uma safra do banco.
-  ///
-  /// Recebe o ID da safra que será removida.
+  /// Exclui uma safra (a API recusa se houver consumos ou lançamentos vinculados).
   Future<int> excluir(int id) async {
-    final db = await DatabaseHelper.database;
+    await ApiClient.delete('$_caminho/$id');
 
-    return await db.delete('safra', where: 'id = ?', whereArgs: [id]);
+    return 1;
   }
 
+  /// Busca uma safra pelo ID (null se não existir ou não for do usuário).
   Future<Safra?> buscarPorId(int id) async {
-    final db = await DatabaseHelper.database;
+    try {
+      final data = await ApiClient.get('$_caminho/$id');
 
-    final maps = await db.query(
-      'safra',
-      where: 'id = ?',
-      whereArgs: [id],
-      limit: 1,
-    );
+      if (data is! Map) return null;
 
-    if (maps.isEmpty) return null;
+      return _doJson(Map<String, dynamic>.from(data));
+    } on ApiException catch (erro) {
+      if (erro.naoEncontrado) return null;
 
-    return Safra.fromMap(maps.first);
+      rethrow;
+    }
   }
 }

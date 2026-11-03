@@ -33,6 +33,16 @@ class TalhaoService {
       return 'Informe uma área válida.';
     }
 
+    try {
+      return await _validarESalvar(talhao);
+    } catch (e) {
+      // Erros da API (regras, permissão ou conexão) viram mensagem para a tela.
+      return e.toString().replaceAll('Exception: ', '');
+    }
+  }
+
+  /// Validação local (mesma regra da API) seguida da gravação.
+  Future<String?> _validarESalvar(Talhao talhao) async {
     final propriedade = await _propriedadeRepository.buscarPorId(
       talhao.propriedadeId,
     );
@@ -68,7 +78,8 @@ class TalhaoService {
 
     final double areaTotalAposSalvar = areaJaUtilizada + talhao.area;
 
-    if (areaTotalAposSalvar > areaMaximaCultivavel) {
+    // Tolerância para arredondamento de ponto flutuante (mesma da API).
+    if (areaTotalAposSalvar > areaMaximaCultivavel + 1e-9) {
       return 'Área excedida. A propriedade mantém 10% como reserva técnica. '
           'Área máxima para talhões: ${_formatarArea(areaMaximaCultivavel)} ha. '
           'Disponível para novos talhões: ${_formatarArea(areaDisponivelTratada)} ha.';

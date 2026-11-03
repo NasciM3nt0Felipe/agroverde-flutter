@@ -1,78 +1,64 @@
 import '../../domain/entities/talhao.dart';
-import 'database_helper.dart';
+import '../api/api_client.dart';
+import '../api/api_json.dart';
 
-/// Repository responsável pelas operações da entidade Talhão.
+/// Responsável pelas operações de talhões — via API (/api/Talhao).
 ///
-/// Aqui centralizamos toda comunicação com o SQLite,
-/// evitando que a tela acesse o banco diretamente.
+/// O usuário vem do token JWT e a API valida se a propriedade pertence a ele.
+/// A API também aplica a regra dos 90% da área da propriedade e impede excluir
+/// talhões com safras vinculadas. Nomes e assinaturas públicas são os mesmos
+/// da versão SQLite.
 class TalhaoRepository {
-  /// Insere um novo talhão no banco.
-  ///
-  /// Retorna o ID gerado pelo SQLite.
-  Future<int> inserir(Talhao talhao) async {
-    final db = await DatabaseHelper.database;
+  static const String _caminho = '/api/Talhao';
 
-    return await db.insert('talhao', talhao.toMap());
+  static Talhao _doJson(Map<String, dynamic> json) {
+    return Talhao(
+      id: jsonIntOuNulo(json['id']),
+      propriedadeId: jsonInt(json['propriedadeId']),
+      nome: (json['nome'] ?? '') as String,
+      area: jsonDouble(json['area']),
+      tipoSolo: json['tipoSolo'] as String?,
+      observacao: json['observacao'] as String?,
+      ativo: json['ativo'] is bool ? json['ativo'] as bool : true,
+    );
   }
 
-  /// Lista todos os talhões vinculados
-  /// à propriedade informada.
-  ///
-  /// Utilizado para exibir apenas os talhões
-  /// da propriedade atualmente em foco.
+  static Map<String, dynamic> _paraJson(Talhao talhao) {
+    return {
+      'propriedadeId': talhao.propriedadeId,
+      'nome': talhao.nome.trim(),
+      'area': talhao.area,
+      'tipoSolo': talhao.tipoSolo,
+      'observacao': talhao.observacao,
+      'ativo': talhao.ativo,
+    };
+  }
+
+  /// Insere um novo talhão e devolve o ID gerado pela API.
+  Future<int> inserir(Talhao talhao) async {
+    final data = await ApiClient.post(_caminho, corpo: _paraJson(talhao));
+
+    return jsonInt((data as Map)['id']);
+  }
+
+  /// Lista os talhões da propriedade (ordem alfabética, como antes).
   Future<List<Talhao>> listarPorPropriedadeId(int propriedadeId) async {
-    final db = await DatabaseHelper.database;
+    final data = await ApiClient.get('$_caminho/propriedade/$propriedadeId');
 
-    final maps = await db.query(
-      'talhao',
-
-      /// Filtra apenas os talhões da propriedade.
-      where: 'propriedade_id = ?',
-
-      /// Valor utilizado no filtro acima.
-      whereArgs: [propriedadeId],
-
-      /// Ordenação alfabética pelo nome.
-      orderBy: 'nome ASC',
-    );
-
-    return maps.map((map) => Talhao.fromMap(map)).toList();
+    return jsonLista(data).map(_doJson).toList();
   }
 
   /// Atualiza um talhão já existente.
-  ///
-  /// O registro é localizado através do ID.
   Future<int> atualizar(Talhao talhao) async {
-    final db = await DatabaseHelper.database;
+    await ApiClient.put('$_caminho/${talhao.id}', corpo: _paraJson(talhao));
 
-    return await db.update(
-      'talhao',
-
-      /// Novos valores.
-      talhao.toMap(),
-
-      /// Localiza o registro.
-      where: 'id = ?',
-
-      /// Valor utilizado no filtro.
-      whereArgs: [talhao.id],
-    );
+    return 1;
   }
 
-  /// Remove um talhão do banco.
-  ///
-  /// Recebe o ID do talhão que será excluído.
+  /// Remove um talhão (a API recusa se houver safras vinculadas).
   Future<int> excluir(int id) async {
-    final db = await DatabaseHelper.database;
+    await ApiClient.delete('$_caminho/$id');
 
-    return await db.delete(
-      'talhao',
-
-      /// Localiza o registro.
-      where: 'id = ?',
-
-      /// Valor utilizado no filtro.
-      whereArgs: [id],
-    );
+    return 1;
   }
 }

@@ -33,6 +33,9 @@ class _DashboardPageState extends State<DashboardPage> {
   // Nesse caso os cards financeiros mostram "Indisponível", nunca R$ 0,00.
   String? _erroFinanceiro;
 
+  // Verdadeiro quando talhões/safras (API) não puderam ser carregados.
+  bool _talhoesIndisponiveis = false;
+
   bool _carregando = false;
 
   @override
@@ -70,27 +73,37 @@ class _DashboardPageState extends State<DashboardPage> {
         _despesas = 0;
         _saldo = 0;
         _erroFinanceiro = null;
+        _talhoesIndisponiveis = false;
         _carregando = false;
       });
       return;
     }
 
-    final talhoes = await _talhaoRepository.listarPorPropriedadeId(
-      propriedadeId,
-    );
-
+    int totalTalhoes = 0;
     int totalSafras = 0;
+    bool talhoesIndisponiveis = false;
 
-    for (final talhao in talhoes) {
-      final safras = await _safraRepository.listarPorTalhaoId(talhao.id!);
+    // Talhões e safras vêm da API: uma falha não deve travar o Dashboard.
+    try {
+      final talhoes = await _talhaoRepository.listarPorPropriedadeId(
+        propriedadeId,
+      );
 
-      final safrasEmExecucao = safras.where((safra) {
-        final status = safra.status.toLowerCase();
+      totalTalhoes = talhoes.length;
 
-        return status == 'planejada' || status == 'em andamento';
-      }).length;
+      for (final talhao in talhoes) {
+        final safras = await _safraRepository.listarPorTalhaoId(talhao.id!);
 
-      totalSafras += safrasEmExecucao;
+        final safrasEmExecucao = safras.where((safra) {
+          final status = safra.status.toLowerCase();
+
+          return status == 'planejada' || status == 'em andamento';
+        }).length;
+
+        totalSafras += safrasEmExecucao;
+      }
+    } catch (_) {
+      talhoesIndisponiveis = true;
     }
 
     final animais = await _rebanhoRepository.listarPorPropriedadeId(
@@ -127,8 +140,9 @@ class _DashboardPageState extends State<DashboardPage> {
     if (!mounted) return;
 
     setState(() {
-      _totalTalhoes = talhoes.length;
+      _totalTalhoes = totalTalhoes;
       _totalSafras = totalSafras;
+      _talhoesIndisponiveis = talhoesIndisponiveis;
       _totalAnimais = animais.length;
       _receitas = receitas;
       _despesas = despesas;
@@ -250,12 +264,16 @@ class _DashboardPageState extends State<DashboardPage> {
                       children: [
                         _DashboardCard(
                           titulo: 'Talhões',
-                          valor: _totalTalhoes.toString(),
+                          valor: _talhoesIndisponiveis
+                              ? 'Indisponível'
+                              : _totalTalhoes.toString(),
                           icone: Icons.agriculture,
                         ),
                         _DashboardCard(
                           titulo: 'Safras',
-                          valor: _totalSafras.toString(),
+                          valor: _talhoesIndisponiveis
+                              ? 'Indisponível'
+                              : _totalSafras.toString(),
                           icone: Icons.grass,
                         ),
                         _DashboardCard(

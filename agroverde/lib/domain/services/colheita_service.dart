@@ -56,29 +56,8 @@ class ColheitaService {
       throw Exception('Esta safra já foi colhida.');
     }
 
-    final colheita = Colheita(
-      safraId: safraId,
-      propriedadeId: propriedadeId,
-      dataColheita: dataColheita,
-      quantidadeProduzida: quantidadeProduzida,
-      unidade: unidade,
-      observacao: observacao,
-    );
-
-    final colheitaId = await _colheitaRepository.inserir(colheita);
-
-    final armazenamento = ArmazenamentoGrao(
-      colheitaId: colheitaId,
-      propriedadeId: propriedadeId,
-      produto: produto.trim(),
-      quantidadeTotal: quantidadeProduzida,
-      quantidadeDisponivel: quantidadeProduzida,
-      unidade: unidade,
-      status: 'Disponível',
-    );
-
-    await _armazenamentoRepository.inserir(armazenamento);
-
+    // 1º a safra na API (status Colhida): se a API estiver indisponível,
+    // nada é gravado localmente e a colheita pode ser repetida.
     await _safraRepository.atualizar(
       Safra(
         id: safra.id,
@@ -95,6 +74,43 @@ class ColheitaService {
         observacao: safra.observacao,
       ),
     );
+
+    try {
+      final colheita = Colheita(
+        safraId: safraId,
+        propriedadeId: propriedadeId,
+        dataColheita: dataColheita,
+        quantidadeProduzida: quantidadeProduzida,
+        unidade: unidade,
+        observacao: observacao,
+      );
+
+      final colheitaId = await _colheitaRepository.inserir(colheita);
+
+      final armazenamento = ArmazenamentoGrao(
+        colheitaId: colheitaId,
+        propriedadeId: propriedadeId,
+        produto: produto.trim(),
+        quantidadeTotal: quantidadeProduzida,
+        quantidadeDisponivel: quantidadeProduzida,
+        unidade: unidade,
+        status: 'Disponível',
+      );
+
+      await _armazenamentoRepository.inserir(armazenamento);
+    } catch (e) {
+      // A gravação local falhou: devolve a safra ao estado anterior na API.
+      try {
+        await _safraRepository.atualizar(safra);
+      } catch (_) {
+        throw Exception(
+          'A colheita não foi salva (${e.toString().replaceAll('Exception: ', '')}), '
+          'mas a safra ficou marcada como Colhida. Ajuste o status da safra.',
+        );
+      }
+
+      rethrow;
+    }
   }
 
   /// Registra uma venda e gera receita financeira.

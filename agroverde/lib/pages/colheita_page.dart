@@ -82,12 +82,27 @@ class _ColheitaPageState extends State<ColheitaPage> {
       _carregando = true;
     });
 
-    final safras = await _safraRepository
-        .listarDisponiveisParaColheitaPorPropriedade(propriedadeId);
+    // As safras vêm da API: em caso de falha, a tela continua com os
+    // registros locais e informa o usuário.
+    var safras = <Safra>[];
+
+    try {
+      safras = await _safraRepository
+          .listarDisponiveisParaColheitaPorPropriedade(propriedadeId);
+    } catch (e) {
+      if (mounted) {
+        _mostrarMensagem(
+          'Não foi possível carregar as safras: '
+          '${e.toString().replaceAll('Exception: ', '')}',
+        );
+      }
+    }
 
     final colheitas = await _service.listarColheitas(propriedadeId);
     final armazenamentos = await _service.listarArmazenamentos(propriedadeId);
     final vendas = await _service.listarVendas(propriedadeId);
+
+    if (!mounted) return;
 
     setState(() {
       _safrasDisponiveis = safras;

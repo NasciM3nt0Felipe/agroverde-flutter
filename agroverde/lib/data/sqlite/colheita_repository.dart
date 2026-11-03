@@ -23,4 +23,18 @@ class ColheitaRepository {
 
     return maps.map((map) => Colheita.fromMap(map)).toList();
   }
+
+  /// Verifica se a safra possui colheita registrada.
+  Future<bool> existeColheitaPorSafra(int safraId) async {
+    final db = await DatabaseHelper.database;
+
+    final maps = await db.query(
+      'colheita',
+      where: 'safra_id = ?',
+      whereArgs: [safraId],
+      limit: 1,
+    );
+
+    return maps.isNotEmpty;
+  }
 }

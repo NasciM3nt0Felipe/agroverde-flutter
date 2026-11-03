@@ -56,24 +56,36 @@ class _PulverizacaoPageState extends State<PulverizacaoPage> {
       return;
     }
 
-    final itens = await _estoqueService.listarPorPropriedadeId(propriedadeId);
+    try {
+      final itens = await _estoqueService.listarPorPropriedadeId(propriedadeId);
 
-    final defensivos = itens.where((item) {
-      return item.categoria.trim().toLowerCase() == 'defensivos' &&
-          item.quantidadeAtual > 0;
-    }).toList();
+      final defensivos = itens.where((item) {
+        return item.categoria.trim().toLowerCase() == 'defensivos' &&
+            item.quantidadeAtual > 0;
+      }).toList();
 
-    setState(() {
-      _defensivos = defensivos;
-      _carregando = false;
-    });
+      if (!mounted) return;
+
+      setState(() {
+        _defensivos = defensivos;
+        _carregando = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _defensivos = [];
+        _carregando = false;
+        _erroPulverizacao = e.toString().replaceAll('Exception: ', '');
+      });
+    }
   }
 
   /// Registra a pulverização da safra.
   ///
   /// A Page valida os campos e envia os dados para o EstoqueService.
-  /// O service fica responsável por validar saldo, baixar estoque
-  /// e registrar o consumo em estoque_insumo.
+  /// O consumo é registrado na API, que valida o saldo e baixa o estoque
+  /// na mesma operação.
   Future<void> _registrarPulverizacao() async {
     setState(() {
       _erroPulverizacao = null;

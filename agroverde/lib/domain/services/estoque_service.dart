@@ -1,13 +1,9 @@
 import '../../data/sqlite/estoque_repository.dart';
-import '../entities/estoque_insumo.dart';
-import '../../data/sqlite/financeiro_repository.dart';
 import '../entities/estoque_item.dart';
-import '../entities/lancamento_financeiro.dart';
 
 /// Responsável pelas regras de negócio do estoque.
 class EstoqueService {
   final EstoqueRepository _repository = EstoqueRepository();
-  final FinanceiroRepository _financeiroRepository = FinanceiroRepository();
 
   /// Lista os itens da propriedade.
   Future<List<EstoqueItem>> listarPorPropriedadeId(int propriedadeId) async {
@@ -34,7 +30,7 @@ class EstoqueService {
     }).toList();
   }
 
-  /// Salva um item e registra a compra no financeiro.
+  /// Salva um item (a despesa da compra é registrada pela API).
   Future<void> salvar(EstoqueItem item) async {
     if (item.nome.trim().isEmpty) {
       throw Exception('Informe o nome do item.');
@@ -61,57 +57,11 @@ class EstoqueService {
     }
 
     if (item.id == null) {
-      // ATENÇÃO: enquanto o Estoque do app grava no SQLite, a despesa da
-      // compra precisa ser criada aqui. Quando o Estoque passar a usar
-      // /api/Estoque, REMOVER este lançamento: a API já gera a despesa
-      // (origem "Estoque") e haveria duplicidade.
-      final valorTotal = item.quantidadeInicial * item.precoMedioUnitario;
-
-      int? lancamentoId;
-
-      // 1º a despesa na API: se a API estiver indisponível, nada é gravado
-      // e o usuário pode tentar de novo sem duplicar o item local.
-      if (valorTotal > 0) {
-        lancamentoId = await _financeiroRepository.inserir(
-          LancamentoFinanceiro(
-            propriedadeId: item.propriedadeId,
-            descricao: 'Compra de ${item.nome}',
-            valor: valorTotal,
-            tipo: 'despesa',
-            data: DateTime.now().toIso8601String(),
-            safraId: null,
-            origemTipo: OrigemLancamento.compraEstoque,
-          ),
-        );
-      }
-
-      try {
-        await _repository.inserir(item);
-      } catch (e) {
-        // O item não foi gravado: desfaz a despesa para não ficar órfã.
-        await _desfazerLancamento(lancamentoId, e);
-        rethrow;
-      }
+      // A API cria o item e, se houver valor de compra, a despesa
+      // (origem "Estoque") na mesma transação — o app não lança despesa.
+      await _repository.inserir(item);
     } else {
       await _repository.atualizar(item);
-    }
-  }
-
-  /// Exclui um lançamento criado antes de uma gravação local que falhou.
-  ///
-  /// Se nem a exclusão for possível, informa o usuário para que remova
-  /// o lançamento manualmente no Financeiro.
-  Future<void> _desfazerLancamento(int? lancamentoId, Object erroOriginal) async {
-    if (lancamentoId == null) return;
-
-    try {
-      await _financeiroRepository.excluir(lancamentoId);
-    } catch (_) {
-      throw Exception(
-        'O item não foi salvo (${erroOriginal.toString().replaceAll('Exception: ', '')}), '
-        'mas a despesa da compra ficou registrada no Financeiro. '
-        'Exclua-a manualmente.',
-      );
     }
   }
 
@@ -120,13 +70,8 @@ class EstoqueService {
     await _repository.excluir(id);
   }
 
-  /// Consome uma quantidade do estoque.
-  ///
-  /// Utilizado por:
-  /// - Plantio
-  /// - Fertilização
-  /// - Pulverização
-  /// - Vacinação
+  /// Baixa uma quantidade do estoque sem vínculo com safra.
+  /// A API revalida o saldo.
   Future<void> consumirEstoque({
     required int estoqueItemId,
     required double quantidade,
@@ -148,21 +93,11 @@ class EstoqueService {
       );
     }
 
-    final itemAtualizado = EstoqueItem(
-      id: item.id,
-      propriedadeId: item.propriedadeId,
-      nome: item.nome,
-      categoria: item.categoria,
-      quantidadeInicial: item.quantidadeInicial,
-      quantidadeAtual: item.quantidadeAtual - quantidade,
-      unidadeMedida: item.unidadeMedida,
-      precoMedioUnitario: item.precoMedioUnitario,
-      estoqueMinimo: item.estoqueMinimo,
-      fornecedor: item.fornecedor,
-      observacao: item.observacao,
+    // A API faz a baixa e revalida o saldo.
+    await _repository.consumir(
+      estoqueItemId: estoqueItemId,
+      quantidade: quantidade,
     );
-
-    await _repository.atualizar(itemAtualizado);
   }
 
   /// Registra o consumo de insumos em uma safra.
@@ -188,23 +123,20 @@ class EstoqueService {
     }
 
     if (item.quantidadeAtual < quantidade) {
-      throw Exception('Estoque insuficiente para ${item.nome}.');
+      throw Exception(
+        'Estoque insuficiente para ${item.nome}. '
+        'Disponível: ${item.quantidadeAtual} ${item.unidadeMedida}.',
+      );
     }
 
-    await consumirEstoque(estoqueItemId: estoqueItemId, quantidade: quantidade);
-
-    final valorTotal = quantidade * item.precoMedioUnitario;
-
-    final consumo = EstoqueInsumo(
+    // Baixa do saldo e registro do consumo em uma única transação na API,
+    // que também valida a safra (mesma propriedade) e o saldo disponível.
+    await _repository.registrarConsumoSafra(
       safraId: safraId,
       estoqueItemId: estoqueItemId,
-      quantidadeUtilizada: quantidade,
-      valorTotal: valorTotal,
-      dataMovimentacao: DateTime.now().toIso8601String(),
+      quantidade: quantidade,
       observacao: observacao,
     );
-
-    await _repository.inserirConsumoInsumo(consumo);
   }
 
   /// Verifica se a safra possui consumo registrado.

@@ -56,24 +56,36 @@ class _FertilizacaoPageState extends State<FertilizacaoPage> {
       return;
     }
 
-    final itens = await _estoqueService.listarPorPropriedadeId(propriedadeId);
+    try {
+      final itens = await _estoqueService.listarPorPropriedadeId(propriedadeId);
 
-    final fertilizantes = itens.where((item) {
-      return item.categoria.trim().toLowerCase() == 'fertilizantes' &&
-          item.quantidadeAtual > 0;
-    }).toList();
+      final fertilizantes = itens.where((item) {
+        return item.categoria.trim().toLowerCase() == 'fertilizantes' &&
+            item.quantidadeAtual > 0;
+      }).toList();
 
-    setState(() {
-      _fertilizantes = fertilizantes;
-      _carregando = false;
-    });
+      if (!mounted) return;
+
+      setState(() {
+        _fertilizantes = fertilizantes;
+        _carregando = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _fertilizantes = [];
+        _carregando = false;
+        _erroFertilizacao = e.toString().replaceAll('Exception: ', '');
+      });
+    }
   }
 
   /// Registra a fertilização da safra.
   ///
   /// A Page valida os campos e envia os dados para o EstoqueService.
-  /// O service fica responsável por validar saldo, baixar estoque
-  /// e registrar o consumo em estoque_insumo.
+  /// O consumo é registrado na API, que valida o saldo e baixa o estoque
+  /// na mesma operação.
   Future<void> _registrarFertilizacao() async {
     setState(() {
       _erroFertilizacao = null;

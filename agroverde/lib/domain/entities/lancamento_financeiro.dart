@@ -1,14 +1,15 @@
 /// Origens de lançamentos automáticos (mesmos valores da API).
 class OrigemLancamento {
-  /// Gerado pela própria API (cadastro de estoque via API).
+  /// Gerados pela própria API (compra de estoque, abastecimento e
+  /// manutenção de veículos): não podem ser editados nem excluídos aqui.
   static const String estoque = 'Estoque';
+  static const String abastecimento = 'Abastecimento';
+  static const String manutencaoVeiculo = 'ManutencaoVeiculo';
 
-  /// Informados pelo app para módulos que ainda gravam localmente.
+  /// Informados pelo app ao criar o lançamento.
   static const String compraEstoque = 'CompraEstoque';
   static const String folhaPagamento = 'FolhaPagamento';
   static const String vendaGraos = 'VendaGraos';
-  static const String abastecimento = 'Abastecimento';
-  static const String manutencaoVeiculo = 'ManutencaoVeiculo';
   static const String vendaVeiculo = 'VendaVeiculo';
 
   /// Nome amigável para exibição.

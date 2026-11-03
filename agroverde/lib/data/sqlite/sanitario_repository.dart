@@ -1,33 +1,69 @@
 import '../../domain/entities/sanitario_rebanho.dart';
-import 'database_helper.dart';
+import '../../domain/services/sessao_service.dart';
+import '../api/api_client.dart';
+import '../api/api_datas.dart';
+import '../api/api_json.dart';
 
+/// Controle sanitário do rebanho — via API (/api/Animal/...).
+///
+/// A API só aceita animais e registros das propriedades do usuário do token.
 class SanitarioRepository {
-  Future<int> inserir(SanitarioRebanho sanitario) async {
-    final db = await DatabaseHelper.database;
-    return db.insert('sanitario_rebanho', sanitario.toMap());
+  static const String _caminho = '/api/Animal';
+
+  static SanitarioRebanho _doJson(Map<String, dynamic> json) {
+    return SanitarioRebanho(
+      id: jsonIntOuNulo(json['id']),
+      animalId: jsonInt(json['animalId']),
+      procedimento: (json['procedimento'] ?? '') as String,
+      data: dataDaApi(json['data']),
+      medicamento: json['medicamento'] as String?,
+      observacao: json['observacao'] as String?,
+    );
   }
 
-  Future<List<SanitarioRebanho>> listar() async {
-    final db = await DatabaseHelper.database;
-    final maps = await db.query('sanitario_rebanho', orderBy: 'id DESC');
+  Future<int> inserir(SanitarioRebanho registro) async {
+    final data = await ApiClient.post(
+      '$_caminho/sanitario',
+      corpo: {
+        'animalId': registro.animalId,
+        'procedimento': registro.procedimento.trim(),
+        'data': dataParaApi(registro.data),
+        'medicamento': textoOuNulo(registro.medicamento),
+        'observacao': textoOuNulo(registro.observacao),
+      },
+    );
 
-    return maps.map((map) => SanitarioRebanho.fromMap(map)).toList();
+    return jsonInt((data as Map)['id']);
+  }
+
+  /// Registros da propriedade em foco (mais recentes primeiro).
+  Future<List<SanitarioRebanho>> listar() async {
+    final propriedadeId = SessaoService.propriedadeId;
+
+    if (propriedadeId == null) return [];
+
+    return listarPorPropriedadeId(propriedadeId);
+  }
+
+  Future<List<SanitarioRebanho>> listarPorPropriedadeId(int propriedadeId) async {
+    final data = await ApiClient.get(
+      '$_caminho/propriedade/$propriedadeId/sanitario',
+    );
+
+    return jsonLista(data).map(_doJson).toList();
   }
 
   Future<List<SanitarioRebanho>> listarPorAnimal(int animalId) async {
-    final db = await DatabaseHelper.database;
-    final maps = await db.query(
-      'sanitario_rebanho',
-      where: 'animal_id = ?',
-      whereArgs: [animalId],
-      orderBy: 'data DESC',
-    );
+    final data = await ApiClient.get('$_caminho/$animalId');
 
-    return maps.map((map) => SanitarioRebanho.fromMap(map)).toList();
+    if (data is! Map) return [];
+
+    return jsonLista(data['controlesSanitarios']).map(_doJson).toList();
   }
 
   Future<int> excluir(int id) async {
-    final db = await DatabaseHelper.database;
-    return db.delete('sanitario_rebanho', where: 'id = ?', whereArgs: [id]);
+    await ApiClient.delete('$_caminho/sanitario/$id');
+
+    return 1;
   }
 }

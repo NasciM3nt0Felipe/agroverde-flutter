@@ -292,40 +292,6 @@ class _LoginPageState extends State<LoginPage> {
 
                       const SizedBox(height: 16),
 
-                      // Separador visual.
-                      const Row(
-                        children: [
-                          Expanded(child: Divider()),
-                          Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 12),
-                            child: Text('ou'),
-                          ),
-                          Expanded(child: Divider()),
-                        ],
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // Botão Google original.
-                      //
-                      // A autenticação Google ainda não
-                      // está implementada neste projeto.
-                      OutlinedButton(
-                        onPressed: () {
-                          debugPrint('Login com Google');
-                        },
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Image.asset('assets/icons/google.png', height: 24),
-                            const SizedBox(width: 10),
-                            const Text('Entrar com Google'),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 12),
-
                       // Navegação para o cadastro.
                       OutlinedButton.icon(
                         onPressed: () {

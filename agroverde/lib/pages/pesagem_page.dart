@@ -4,6 +4,7 @@ import '../data/sqlite/pesagem_repository.dart';
 import '../data/sqlite/rebanho_repository.dart';
 import '../domain/entities/animal.dart';
 import '../domain/entities/pesagem_rebanho.dart';
+import '../domain/services/sessao_service.dart';
 import '../theme/app_theme.dart';
 
 class PesagemPage extends StatefulWidget {
@@ -43,8 +44,29 @@ class _PesagemPageState extends State<PesagemPage> {
   }
 
   Future<void> _carregarDados() async {
-    final animais = await _rebanhoRepository.listar();
-    final pesagens = await _pesagemRepository.listar();
+    final propriedadeId = SessaoService.propriedadeId;
+
+    if (propriedadeId == null) {
+      setState(() {
+        _animais = [];
+        _pesagens = [];
+      });
+      return;
+    }
+
+    final List<Animal> animais;
+    final List<PesagemRebanho> pesagens;
+
+    try {
+      animais = await _rebanhoRepository.listarPorPropriedadeId(propriedadeId);
+      pesagens = await _pesagemRepository.listarPorPropriedadeId(propriedadeId);
+    } catch (e) {
+      if (!mounted) return;
+      _mostrarMensagem(e.toString().replaceAll('Exception: ', ''));
+      return;
+    }
+
+    if (!mounted) return;
 
     setState(() {
       _animais = animais;
@@ -84,7 +106,15 @@ class _PesagemPageState extends State<PesagemPage> {
       observacao: _observacaoController.text.trim(),
     );
 
-    await _pesagemRepository.inserir(pesagem);
+    try {
+      await _pesagemRepository.inserir(pesagem);
+    } catch (e) {
+      if (!mounted) return;
+      _mostrarMensagem(e.toString().replaceAll('Exception: ', ''));
+      return;
+    }
+
+    if (!mounted) return;
 
     _pesoController.clear();
     _dataController.clear();
@@ -100,8 +130,17 @@ class _PesagemPageState extends State<PesagemPage> {
   }
 
   Future<void> _excluirPesagem(int id) async {
-    await _pesagemRepository.excluir(id);
+    try {
+      await _pesagemRepository.excluir(id);
+    } catch (e) {
+      if (!mounted) return;
+      _mostrarMensagem(e.toString().replaceAll('Exception: ', ''));
+      return;
+    }
+
     await _carregarDados();
+
+    if (!mounted) return;
     _mostrarMensagem('Pesagem excluída.');
   }
 

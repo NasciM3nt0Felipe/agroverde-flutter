@@ -45,6 +45,9 @@ class _VeiculoPageState extends State<VeiculoPage> {
   bool _mostrarFormulario = false;
   bool _carregando = false;
 
+  // Evita cadastros duplicados com cliques repetidos.
+  bool _salvandoVeiculo = false;
+
   final List<String> _tipos = const [
     'Trator',
     'Caminhonete',
@@ -126,7 +129,9 @@ class _VeiculoPageState extends State<VeiculoPage> {
         _carregando = false;
       });
 
-      _mostrarMensagem('Erro ao carregar veículos: $e');
+      _mostrarMensagem(
+        'Erro ao carregar veículos: ${e.toString().replaceAll('Exception: ', '')}',
+      );
     }
   }
 
@@ -158,9 +163,21 @@ class _VeiculoPageState extends State<VeiculoPage> {
       observacao: _observacaoController.text.trim(),
     );
 
-    await _veiculoService.salvar(veiculo);
+    if (_salvandoVeiculo) return;
+
+    setState(() => _salvandoVeiculo = true);
+
+    try {
+      await _veiculoService.salvar(veiculo);
+    } catch (e) {
+      if (mounted) setState(() => _salvandoVeiculo = false);
+      _mostrarMensagem(e.toString().replaceAll('Exception: ', ''));
+      return;
+    }
 
     if (!mounted) return;
+
+    setState(() => _salvandoVeiculo = false);
 
     _mostrarMensagem(
       _veiculoEditando == null
@@ -223,7 +240,12 @@ class _VeiculoPageState extends State<VeiculoPage> {
 
     if (confirmar != true) return;
 
-    await _veiculoService.excluir(veiculo.id!);
+    try {
+      await _veiculoService.excluir(veiculo.id!);
+    } catch (e) {
+      _mostrarMensagem(e.toString().replaceAll('Exception: ', ''));
+      return;
+    }
 
     if (!mounted) return;
 
@@ -243,8 +265,17 @@ class _VeiculoPageState extends State<VeiculoPage> {
 
     String tipoCombustivelSelecionado = 'Diesel';
 
-    List<Abastecimento> historico = await _abastecimentoService
-        .listarPorVeiculoId(veiculo.id!);
+    // Evita dois abastecimentos (e duas despesas) com cliques repetidos.
+    var salvando = false;
+
+    List<Abastecimento> historico;
+
+    try {
+      historico = await _abastecimentoService.listarPorVeiculoId(veiculo.id!);
+    } catch (e) {
+      _mostrarMensagem(e.toString().replaceAll('Exception: ', ''));
+      return;
+    }
 
     if (!mounted) return;
 
@@ -270,17 +301,22 @@ class _VeiculoPageState extends State<VeiculoPage> {
                 observacao: tipoCombustivelSelecionado,
               );
 
-              await _abastecimentoService.salvar(abastecimento);
-              await _veiculoService.registrarAbastecimentoFinanceiro(
-                propriedadeId: veiculo.propriedadeId,
-                nomeVeiculo: veiculo.nome,
-                valor: valor,
-                data: dataController.text.trim(),
-              );
+              if (salvando) return;
+              salvando = true;
 
-              historico = await _abastecimentoService.listarPorVeiculoId(
-                veiculo.id!,
-              );
+              // A API grava o abastecimento e a despesa no Financeiro
+              // na mesma transação.
+              try {
+                await _abastecimentoService.salvar(abastecimento);
+                historico = await _abastecimentoService.listarPorVeiculoId(
+                  veiculo.id!,
+                );
+              } catch (e) {
+                _mostrarMensagem(e.toString().replaceAll('Exception: ', ''));
+                return;
+              } finally {
+                salvando = false;
+              }
 
               litrosController.clear();
               valorController.clear();
@@ -295,11 +331,15 @@ class _VeiculoPageState extends State<VeiculoPage> {
             Future<void> excluir(Abastecimento item) async {
               if (item.id == null) return;
 
-              await _abastecimentoService.excluir(item.id!);
-
-              historico = await _abastecimentoService.listarPorVeiculoId(
-                veiculo.id!,
-              );
+              try {
+                await _abastecimentoService.excluir(item.id!);
+                historico = await _abastecimentoService.listarPorVeiculoId(
+                  veiculo.id!,
+                );
+              } catch (e) {
+                _mostrarMensagem(e.toString().replaceAll('Exception: ', ''));
+                return;
+              }
 
               setDialogState(() {});
               await _carregarVeiculos();
@@ -408,8 +448,17 @@ class _VeiculoPageState extends State<VeiculoPage> {
     final valorController = TextEditingController();
     final observacaoController = TextEditingController();
 
-    List<ManutencaoVeiculo> historico = await _manutencaoService
-        .listarPorVeiculoId(veiculo.id!);
+    // Evita duas manutenções (e duas despesas) com cliques repetidos.
+    var salvando = false;
+
+    List<ManutencaoVeiculo> historico;
+
+    try {
+      historico = await _manutencaoService.listarPorVeiculoId(veiculo.id!);
+    } catch (e) {
+      _mostrarMensagem(e.toString().replaceAll('Exception: ', ''));
+      return;
+    }
 
     if (!mounted) return;
 
@@ -435,17 +484,22 @@ class _VeiculoPageState extends State<VeiculoPage> {
                 observacao: observacaoController.text.trim(),
               );
 
-              await _manutencaoService.salvar(manutencao);
-              await _veiculoService.registrarManutencaoFinanceira(
-                propriedadeId: veiculo.propriedadeId,
-                nomeVeiculo: veiculo.nome,
-                valor: valor,
-                data: dataController.text.trim(),
-              );
+              if (salvando) return;
+              salvando = true;
 
-              historico = await _manutencaoService.listarPorVeiculoId(
-                veiculo.id!,
-              );
+              // A API grava a manutenção e a despesa no Financeiro
+              // na mesma transação.
+              try {
+                await _manutencaoService.salvar(manutencao);
+                historico = await _manutencaoService.listarPorVeiculoId(
+                  veiculo.id!,
+                );
+              } catch (e) {
+                _mostrarMensagem(e.toString().replaceAll('Exception: ', ''));
+                return;
+              } finally {
+                salvando = false;
+              }
 
               tipoController.clear();
               descricaoController.clear();
@@ -462,11 +516,15 @@ class _VeiculoPageState extends State<VeiculoPage> {
             Future<void> excluir(ManutencaoVeiculo item) async {
               if (item.id == null) return;
 
-              await _manutencaoService.excluir(item.id!);
-
-              historico = await _manutencaoService.listarPorVeiculoId(
-                veiculo.id!,
-              );
+              try {
+                await _manutencaoService.excluir(item.id!);
+                historico = await _manutencaoService.listarPorVeiculoId(
+                  veiculo.id!,
+                );
+              } catch (e) {
+                _mostrarMensagem(e.toString().replaceAll('Exception: ', ''));
+                return;
+              }
 
               setDialogState(() {});
               await _carregarVeiculos();
@@ -625,6 +683,7 @@ class _VeiculoPageState extends State<VeiculoPage> {
   @override
   Widget build(BuildContext context) {
     final propriedadeId = SessaoService.propriedadeId;
+    final propriedadeNome = SessaoService.propriedadeNome;
 
     return Scaffold(
       appBar: AppBar(
@@ -632,186 +691,231 @@ class _VeiculoPageState extends State<VeiculoPage> {
         backgroundColor: AppTheme.primaryGreen,
         foregroundColor: Colors.white,
       ),
-      body: propriedadeId == null
-          ? const Center(
-              child: Text(
-                'Selecione uma propriedade para gerenciar os veículos.',
-              ),
-            )
-          : _carregando
-              ? const Center(child: CircularProgressIndicator())
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _cabecalho(),
-                      const SizedBox(height: 20),
-                      _resumoCards(),
-                      const SizedBox(height: 20),
-                      if (_mostrarFormulario) _formulario(),
-                      if (_mostrarFormulario) const SizedBox(height: 20),
-                      _listaVeiculos(),
-                    ],
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1000),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text(
+                      propriedadeNome == null
+                          ? 'Nenhuma propriedade em foco.'
+                          : 'Propriedade em foco: $propriedadeNome',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
+                const SizedBox(height: 24),
+                if (propriedadeId == null)
+                  const Card(
+                    child: Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Text(
+                        'Selecione uma propriedade para gerenciar os veículos.',
+                      ),
+                    ),
+                  )
+                else if (_carregando)
+                  const Padding(
+                    padding: EdgeInsets.all(48),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                else ...[
+                  _resumoCards(),
+                  const SizedBox(height: 24),
+                  if (!_mostrarFormulario) _cabecalho(),
+                  if (_mostrarFormulario) _formulario(),
+                  const SizedBox(height: 24),
+                  _listaVeiculos(),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
   Widget _cabecalho() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Veículos',
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 4),
-            Text(
-              'Gestão simples de veículos e máquinas da propriedade.',
-              style: TextStyle(fontSize: 14, color: Colors.black54),
-            ),
-          ],
-        ),
-        ElevatedButton.icon(
-          style: ElevatedButton.styleFrom(
-            minimumSize: const Size(0, 45),
-          ),
-          onPressed: _novoVeiculo,
-          icon: const Icon(Icons.add),
-          label: const Text('Novo Veículo'),
-        ),
-      ],
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: ElevatedButton.icon(
+        style: ElevatedButton.styleFrom(minimumSize: const Size(0, 45)),
+        onPressed: _novoVeiculo,
+        icon: const Icon(Icons.add),
+        label: const Text('Novo Veículo'),
+      ),
     );
   }
 
   Widget _resumoCards() {
     return Wrap(
-      spacing: 12,
-      runSpacing: 12,
+      spacing: 16,
+      runSpacing: 16,
       children: [
-        _cardResumo('Veículos Ativos', _ativos.toString()),
-        _cardResumo('Em Manutenção', _manutencao.toString()),
-        _cardResumo('Vendidos', _vendidos.toString()),
-        _cardResumo('Gasto Combustível', _moeda(_totalCombustivel)),
-        _cardResumo('Gasto Manutenção', _moeda(_totalManutencao)),
+        _cardResumo('Veículos ativos', _ativos.toString(), Icons.local_shipping),
+        _cardResumo(
+          'Em manutenção',
+          _manutencao.toString(),
+          Icons.build,
+          cor: _manutencao > 0 ? Colors.orange.shade800 : null,
+        ),
+        _cardResumo('Vendidos', _vendidos.toString(), Icons.sell),
+        _cardResumo(
+          'Gasto com combustível',
+          _moeda(_totalCombustivel),
+          Icons.local_gas_station,
+        ),
+        _cardResumo(
+          'Gasto com manutenção',
+          _moeda(_totalManutencao),
+          Icons.handyman,
+        ),
       ],
     );
   }
 
-  Widget _cardResumo(String titulo, String valor) {
-    return Container(
-      width: 190,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.black12),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            titulo,
-            style: const TextStyle(fontSize: 14, color: Colors.black54),
+  // Mesmo padrão das boxes do Dashboard: ícone, valor e título.
+  Widget _cardResumo(String titulo, String valor, IconData icone, {Color? cor}) {
+    return SizedBox(
+      width: 184,
+      height: 130,
+      child: Card(
+        elevation: 4,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Icon(icone, color: cor ?? AppTheme.primaryGreen, size: 30),
+              Text(
+                valor,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(titulo, textAlign: TextAlign.center),
+            ],
           ),
-          const SizedBox(height: 8),
-          const Divider(height: 1),
-          const SizedBox(height: 8),
-          Text(
-            valor,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.primaryGreen,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
   Widget _formulario() {
     return Card(
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(24),
         child: Form(
           key: _formKey,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                _veiculoEditando == null ? 'Novo Veículo' : 'Editar Veículo',
+                _veiculoEditando == null
+                    ? 'Cadastro de Veículo'
+                    : 'Editar Veículo',
+                textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 20,
+                  fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  _campoTexto(
-                    controller: _nomeController,
-                    label: 'Nome',
-                    obrigatorio: true,
-                  ),
-                  _dropdownTipo(),
-                  _campoTexto(controller: _marcaController, label: 'Marca'),
-                  _campoTexto(controller: _modeloController, label: 'Modelo'),
-                  _campoTexto(
-                    controller: _anoController,
-                    label: 'Ano',
-                    numero: true,
-                  ),
-                  _campoTexto(controller: _placaController, label: 'Placa'),
-                  _campoTexto(
-                    controller: _horimetroController,
-                    label: 'Horímetro/Odômetro Atual',
-                    numeroDecimal: true,
-                  ),
-                  _dropdownStatus(),
-                ],
+              const SizedBox(height: 24),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  // Duas colunas em telas largas, uma em telas estreitas.
+                  final largura = constraints.maxWidth >= 640
+                      ? (constraints.maxWidth - 16) / 2
+                      : constraints.maxWidth;
+
+                  return Wrap(
+                    spacing: 16,
+                    runSpacing: 16,
+                    children: [
+                      _campoTexto(
+                        controller: _nomeController,
+                        label: 'Nome',
+                        icone: Icons.local_shipping,
+                        largura: largura,
+                        obrigatorio: true,
+                      ),
+                      _dropdownTipo(largura),
+                      _campoTexto(
+                        controller: _marcaController,
+                        label: 'Marca',
+                        icone: Icons.factory,
+                        largura: largura,
+                      ),
+                      _campoTexto(
+                        controller: _modeloController,
+                        label: 'Modelo',
+                        icone: Icons.directions_car,
+                        largura: largura,
+                      ),
+                      _campoTexto(
+                        controller: _anoController,
+                        label: 'Ano',
+                        icone: Icons.calendar_today,
+                        largura: largura,
+                        numero: true,
+                      ),
+                      _campoTexto(
+                        controller: _placaController,
+                        label: 'Placa',
+                        icone: Icons.pin,
+                        largura: largura,
+                      ),
+                      _campoTexto(
+                        controller: _horimetroController,
+                        label: 'Horímetro/Odômetro atual',
+                        icone: Icons.speed,
+                        largura: largura,
+                        numeroDecimal: true,
+                      ),
+                      _dropdownStatus(largura),
+                    ],
+                  );
+                },
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _observacaoController,
                 maxLines: 3,
                 decoration: const InputDecoration(
                   labelText: 'Observação',
-                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.notes),
                 ),
               ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(0, 48),
-                    ),
-                    onPressed: _salvarVeiculo,
-                    child: Text(
-                      _veiculoEditando == null ? 'Salvar' : 'Atualizar',
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(0, 48),
-                    ),
-                    onPressed: _cancelarFormulario,
-                    child: const Text('Cancelar'),
-                  ),
-                ],
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(0, 48),
+                ),
+                onPressed: _salvandoVeiculo ? null : _salvarVeiculo,
+                icon: Icon(_veiculoEditando == null ? Icons.save : Icons.edit),
+                label: Text(
+                  _veiculoEditando == null
+                      ? 'Salvar Veículo'
+                      : 'Salvar Alterações',
+                ),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(0, 48),
+                ),
+                onPressed: _cancelarFormulario,
+                child: const Text('Cancelar'),
               ),
             ],
           ),
@@ -823,12 +927,14 @@ class _VeiculoPageState extends State<VeiculoPage> {
   Widget _campoTexto({
     required TextEditingController controller,
     required String label,
+    required IconData icone,
+    required double largura,
     bool obrigatorio = false,
     bool numero = false,
     bool numeroDecimal = false,
   }) {
     return SizedBox(
-      width: 260,
+      width: largura,
       child: TextFormField(
         controller: controller,
         keyboardType: numero || numeroDecimal
@@ -836,7 +942,7 @@ class _VeiculoPageState extends State<VeiculoPage> {
             : TextInputType.text,
         decoration: InputDecoration(
           labelText: label,
-          border: const OutlineInputBorder(),
+          prefixIcon: Icon(icone),
         ),
         validator: obrigatorio
             ? (value) {
@@ -872,14 +978,14 @@ class _VeiculoPageState extends State<VeiculoPage> {
     );
   }
 
-  Widget _dropdownTipo() {
+  Widget _dropdownTipo(double largura) {
     return SizedBox(
-      width: 260,
+      width: largura,
       child: DropdownButtonFormField<String>(
         value: _tipoSelecionado,
         decoration: const InputDecoration(
           labelText: 'Tipo',
-          border: OutlineInputBorder(),
+          prefixIcon: Icon(Icons.category),
         ),
         items: _tipos.map((tipo) {
           return DropdownMenuItem(value: tipo, child: Text(tipo));
@@ -895,14 +1001,14 @@ class _VeiculoPageState extends State<VeiculoPage> {
     );
   }
 
-  Widget _dropdownStatus() {
+  Widget _dropdownStatus(double largura) {
     return SizedBox(
-      width: 260,
+      width: largura,
       child: DropdownButtonFormField<String>(
         value: _statusSelecionado,
         decoration: const InputDecoration(
           labelText: 'Status',
-          border: OutlineInputBorder(),
+          prefixIcon: Icon(Icons.flag),
         ),
         items: _statusList.map((status) {
           return DropdownMenuItem(value: status, child: Text(status));
@@ -919,16 +1025,65 @@ class _VeiculoPageState extends State<VeiculoPage> {
   }
 
   Widget _listaVeiculos() {
-    if (_veiculos.isEmpty) {
-      return const Card(
-        child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Center(child: Text('Nenhum veículo cadastrado.')),
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Veículos cadastrados',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Exibindo ${_veiculos.length} veículo(s)',
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 16),
+            if (_veiculos.isEmpty)
+              const Text('Nenhum veículo cadastrado.')
+            else
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _veiculos.length,
+                separatorBuilder: (context, index) => const Divider(),
+                itemBuilder: (context, index) =>
+                    _cardVeiculo(_veiculos[index]),
+              ),
+          ],
         ),
-      );
-    }
+      ),
+    );
+  }
 
-    return Column(children: _veiculos.map(_cardVeiculo).toList());
+  IconData _iconeTipo(String tipo) {
+    switch (tipo) {
+      case 'Trator':
+        return Icons.agriculture;
+      case 'Colheitadeira':
+        return Icons.grass;
+      case 'Pulverizador':
+        return Icons.water_drop;
+      case 'Caminhão':
+        return Icons.local_shipping;
+      case 'Caminhonete':
+        return Icons.directions_car;
+      default:
+        return Icons.build_circle;
+    }
+  }
+
+  Color _corStatus(String status) {
+    switch (status) {
+      case 'Ativo':
+        return Colors.green;
+      case 'Manutenção':
+        return Colors.orange;
+      default:
+        return Colors.grey;
+    }
   }
 
   Widget _cardVeiculo(Veiculo veiculo) {
@@ -942,163 +1097,123 @@ class _VeiculoPageState extends State<VeiculoPage> {
         ? 0.0
         : (_totalManutencaoPorVeiculo[id] ?? 0.0);
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 14),
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    final detalhes = [
+      veiculo.tipo,
+      if (veiculo.marca.isNotEmpty) veiculo.marca,
+      if (veiculo.modelo.isNotEmpty) veiculo.modelo,
+      if (veiculo.ano != 0) veiculo.ano.toString(),
+      if (veiculo.placa.isNotEmpty) 'Placa ${veiculo.placa}',
+    ].join(' | ');
+
+    final info = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    veiculo.nome,
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 18,
-                    runSpacing: 8,
-                    children: [
-                      _info('Tipo', veiculo.tipo),
-                      _info(
-                        'Marca',
-                        veiculo.marca.isEmpty ? '-' : veiculo.marca,
-                      ),
-                      _info(
-                        'Modelo',
-                        veiculo.modelo.isEmpty ? '-' : veiculo.modelo,
-                      ),
-                      _info(
-                        'Ano',
-                        veiculo.ano == 0 ? '-' : veiculo.ano.toString(),
-                      ),
-                      _info(
-                        'Placa',
-                        veiculo.placa.isEmpty ? '-' : veiculo.placa,
-                      ),
-                      _statusChip(veiculo.status),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: [
-                      _miniResumo('Combustível', _moeda(totalCombustivel)),
-                      _miniResumo('Manutenção', _moeda(totalManutencao)),
-                      _miniResumo(
-                        'Horímetro/Odômetro',
-                        veiculo.horimetroOdometroAtual == 0
-                            ? '-'
-                            : veiculo.horimetroOdometroAtual.toString(),
-                      ),
-                    ],
-                  ),
-                  if (veiculo.observacao.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                      'Obs.: ${veiculo.observacao}',
-                      style: const TextStyle(color: Colors.black54),
-                    ),
-                  ],
-                ],
+            Flexible(
+              child: Text(
+                veiculo.nome,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-            const SizedBox(width: 16),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _botaoCard(
-                  texto: 'Abastecimento',
-                  onPressed: () => _abrirAbastecimentos(veiculo),
-                ),
-                const SizedBox(width: 8),
-                _botaoCard(
-                  texto: 'Manutenção',
-                  onPressed: () => _abrirManutencoes(veiculo),
-                ),
-                const SizedBox(width: 8),
-                _botaoCard(texto: 'Editar', onPressed: () => _editar(veiculo)),
-                const SizedBox(width: 8),
-                _botaoCard(
-                  texto: 'Excluir',
-                  vermelho: true,
-                  onPressed: () => _excluir(veiculo),
-                ),
-              ],
-            ),
+            const SizedBox(width: 8),
+            _statusChip(veiculo.status),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _botaoCard({
-    required String texto,
-    required VoidCallback onPressed,
-    bool vermelho = false,
-  }) {
-    final corBotao = vermelho ? Colors.red : AppTheme.primaryGreen;
-
-    return SizedBox(
-      width: 125,
-      height: 40,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: corBotao,
-          foregroundColor: Colors.white,
-          elevation: 0,
-          padding: EdgeInsets.zero,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
+        const SizedBox(height: 4),
+        Text(detalhes, style: const TextStyle(color: Colors.black54)),
+        const SizedBox(height: 4),
+        Text(
+          'Combustível: ${_moeda(totalCombustivel)} | '
+          'Manutenção: ${_moeda(totalManutencao)} | '
+          'Horímetro/Odômetro: ${veiculo.horimetroOdometroAtual == 0 ? '-' : veiculo.horimetroOdometroAtual.toString()}',
         ),
-        onPressed: onPressed,
-        child: Text(
-          texto,
-          textAlign: TextAlign.center,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
-      ),
-    );
-  }
-
-  Widget _info(String label, String valor) {
-    return Text('$label: $valor');
-  }
-
-  Widget _miniResumo(String titulo, String valor) {
-    return Container(
-      width: 190,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppTheme.backgroundColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.black12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(titulo, style: const TextStyle(color: Colors.black54)),
-          const SizedBox(height: 6),
+        if (veiculo.observacao.isNotEmpty) ...[
+          const SizedBox(height: 4),
           Text(
-            valor,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              color: AppTheme.primaryGreen,
-            ),
+            'Obs.: ${veiculo.observacao}',
+            style: const TextStyle(color: Colors.black54),
           ),
         ],
+      ],
+    );
+
+    final botoes = Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        OutlinedButton.icon(
+          style: OutlinedButton.styleFrom(minimumSize: const Size(0, 38)),
+          onPressed: () => _abrirAbastecimentos(veiculo),
+          icon: const Icon(Icons.local_gas_station, size: 18),
+          label: const Text('Abastecimento'),
+        ),
+        OutlinedButton.icon(
+          style: OutlinedButton.styleFrom(minimumSize: const Size(0, 38)),
+          onPressed: () => _abrirManutencoes(veiculo),
+          icon: const Icon(Icons.handyman, size: 18),
+          label: const Text('Manutenção'),
+        ),
+        OutlinedButton(
+          style: OutlinedButton.styleFrom(minimumSize: const Size(0, 38)),
+          onPressed: () => _editar(veiculo),
+          child: const Text('Editar'),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red,
+            foregroundColor: Colors.white,
+            minimumSize: const Size(0, 38),
+          ),
+          onPressed: () => _excluir(veiculo),
+          child: const Text('Excluir'),
+        ),
+      ],
+    );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final icone = Padding(
+            padding: const EdgeInsets.only(top: 2, right: 16),
+            child: Icon(
+              _iconeTipo(veiculo.tipo),
+              color: _corStatus(veiculo.status),
+              size: 28,
+            ),
+          );
+
+          // Em telas largas os botões ficam à direita; em estreitas, abaixo.
+          if (constraints.maxWidth >= 820) {
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                icone,
+                Expanded(child: info),
+                const SizedBox(width: 16),
+                botoes,
+              ],
+            );
+          }
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              icone,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [info, const SizedBox(height: 12), botoes],
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

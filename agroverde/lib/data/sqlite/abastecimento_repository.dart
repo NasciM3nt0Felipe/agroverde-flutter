@@ -1,95 +1,83 @@
 import '../../domain/entities/abastecimento.dart';
-import 'database_helper.dart';
+import '../api/api_client.dart';
+import '../api/api_datas.dart';
+import '../api/api_exception.dart';
+import '../api/api_json.dart';
 
-/// Responsável pelas operações de persistência de abastecimentos.
+/// Abastecimentos dos veículos — via API (/api/Veiculo/...).
+///
+/// A API grava o abastecimento e a despesa no Financeiro na mesma
+/// transação; alterar ou excluir o abastecimento ajusta a despesa.
 class AbastecimentoRepository {
-  /// Insere um novo abastecimento no banco.
+  static const String _caminho = '/api/Veiculo';
+
+  static Abastecimento _doJson(Map<String, dynamic> json) {
+    return Abastecimento(
+      id: jsonIntOuNulo(json['id']),
+      veiculoId: jsonInt(json['veiculoId']),
+      data: (json['data'] ?? '') as String,
+      litros: jsonDouble(json['litros']),
+      valorTotal: jsonDouble(json['valorTotal']),
+      observacao: (json['observacao'] ?? '') as String,
+    );
+  }
+
+  static Map<String, dynamic> _paraJson(Abastecimento item) {
+    return {
+      'veiculoId': item.veiculoId,
+      'data': dataParaApi(item.data, campo: 'data do abastecimento'),
+      'litros': item.litros,
+      'valorTotal': item.valorTotal,
+      'observacao': textoOuNulo(item.observacao),
+    };
+  }
+
   Future<int> inserir(Abastecimento abastecimento) async {
-    final db = await DatabaseHelper.database;
+    final data = await ApiClient.post(
+      '$_caminho/abastecimentos',
+      corpo: _paraJson(abastecimento),
+    );
 
-    return await db.insert('abastecimento', abastecimento.toMap());
+    return jsonInt((data as Map)['id']);
   }
 
-  /// Atualiza os dados de um abastecimento existente.
   Future<int> atualizar(Abastecimento abastecimento) async {
-    final db = await DatabaseHelper.database;
-
-    return await db.update(
-      'abastecimento',
-      abastecimento.toMap(),
-      where: 'id = ?',
-      whereArgs: [abastecimento.id],
+    await ApiClient.put(
+      '$_caminho/abastecimentos/${abastecimento.id}',
+      corpo: _paraJson(abastecimento),
     );
+
+    return 1;
   }
 
-  /// Remove um abastecimento pelo identificador.
+  /// Exclui o abastecimento e a despesa gerada por ele.
   Future<int> excluir(int id) async {
-    final db = await DatabaseHelper.database;
+    await ApiClient.delete('$_caminho/abastecimentos/$id');
 
-    return await db.delete('abastecimento', where: 'id = ?', whereArgs: [id]);
+    return 1;
   }
 
-  /// Busca um abastecimento específico pelo ID.
   Future<Abastecimento?> buscarPorId(int id) async {
-    final db = await DatabaseHelper.database;
-
-    final resultado = await db.query(
-      'abastecimento',
-      where: 'id = ?',
-      whereArgs: [id],
-      limit: 1,
-    );
-
-    if (resultado.isEmpty) {
-      return null;
-    }
-
-    return Abastecimento.fromMap(resultado.first);
+    // A API não expõe a busca individual; não há uso dessa busca nas telas.
+    throw ApiException('Busca de abastecimento por ID não disponível.');
   }
 
-  /// Retorna todos os abastecimentos vinculados ao veículo.
+  /// Abastecimentos do veículo (mais recentes primeiro).
   Future<List<Abastecimento>> listarPorVeiculoId(int veiculoId) async {
-    final db = await DatabaseHelper.database;
+    final data = await ApiClient.get('$_caminho/$veiculoId/abastecimentos');
 
-    final resultado = await db.query(
-      'abastecimento',
-      where: 'veiculo_id = ?',
-      whereArgs: [veiculoId],
-      orderBy: 'data DESC',
-    );
-
-    return resultado.map((e) => Abastecimento.fromMap(e)).toList();
+    return jsonLista(data).map(_doJson).toList();
   }
 
-  /// Calcula o valor total gasto com abastecimentos do veículo.
   Future<double> totalGastoVeiculo(int veiculoId) async {
-    final db = await DatabaseHelper.database;
+    final lista = await listarPorVeiculoId(veiculoId);
 
-    final resultado = await db.rawQuery(
-      '''
-      SELECT SUM(valor_total) as total
-      FROM abastecimento
-      WHERE veiculo_id = ?
-    ''',
-      [veiculoId],
-    );
-
-    return (resultado.first['total'] as num?)?.toDouble() ?? 0;
+    return lista.fold<double>(0, (total, a) => total + a.valorTotal);
   }
 
-  /// Calcula o total de litros abastecidos no veículo.
   Future<double> totalLitrosVeiculo(int veiculoId) async {
-    final db = await DatabaseHelper.database;
+    final lista = await listarPorVeiculoId(veiculoId);
 
-    final resultado = await db.rawQuery(
-      '''
-      SELECT SUM(litros) as total
-      FROM abastecimento
-      WHERE veiculo_id = ?
-    ''',
-      [veiculoId],
-    );
-
-    return (resultado.first['total'] as num?)?.toDouble() ?? 0;
+    return lista.fold<double>(0, (total, a) => total + a.litros);
   }
 }

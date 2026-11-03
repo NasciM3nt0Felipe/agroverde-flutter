@@ -1,50 +1,75 @@
 import '../../domain/entities/animal.dart';
-import 'database_helper.dart';
+import '../api/api_client.dart';
+import '../api/api_datas.dart';
+import '../api/api_json.dart';
 
+/// Animais do rebanho — via API (/api/Animal).
+///
+/// O usuário vem do token JWT e a API só devolve animais das propriedades
+/// dele. Nomes e assinaturas públicas são os mesmos da versão SQLite.
 class RebanhoRepository {
-  Future<int> inserir(Animal animal) async {
-    final db = await DatabaseHelper.database;
+  static const String _caminho = '/api/Animal';
 
-    return await db.insert('rebanho', animal.toMap());
-  }
-
-  /// Mantido por compatibilidade com as páginas antigas do Maicon.
-  /// Depois podemos trocar essas páginas para usar listarPorPropriedadeId.
-  Future<List<Animal>> listar() async {
-    final db = await DatabaseHelper.database;
-
-    final maps = await db.query('rebanho', orderBy: 'id DESC');
-
-    return maps.map((map) => Animal.fromMap(map)).toList();
-  }
-
-  Future<List<Animal>> listarPorPropriedadeId(int propriedadeId) async {
-    final db = await DatabaseHelper.database;
-
-    final maps = await db.query(
-      'rebanho',
-      where: 'propriedade_id = ?',
-      whereArgs: [propriedadeId],
-      orderBy: 'id DESC',
+  static Animal _doJson(Map<String, dynamic> json) {
+    return Animal(
+      id: jsonIntOuNulo(json['id']),
+      propriedadeId: jsonInt(json['propriedadeId']),
+      identificacao: (json['identificacao'] ?? '') as String,
+      especie: (json['especie'] ?? '') as String,
+      raca: json['raca'] as String?,
+      sexo: (json['sexo'] ?? '') as String,
+      dataNascimento: json['dataNascimento'] as String?,
+      peso: jsonDoubleOuNulo(json['peso']),
+      status: (json['status'] ?? '') as String,
+      observacao: json['observacao'] as String?,
     );
+  }
 
-    return maps.map((map) => Animal.fromMap(map)).toList();
+  static Map<String, dynamic> _paraJson(Animal animal) {
+    return {
+      'propriedadeId': animal.propriedadeId,
+      'identificacao': animal.identificacao.trim(),
+      'especie': animal.especie.trim(),
+      'raca': textoOuNulo(animal.raca),
+      'sexo': animal.sexo.trim(),
+      'dataNascimento': textoOuNulo(animal.dataNascimento),
+      'peso': animal.peso,
+      'status': animal.status.trim(),
+      'observacao': textoOuNulo(animal.observacao),
+    };
+  }
+
+  /// Cadastra o animal e devolve o ID gerado pela API.
+  Future<int> inserir(Animal animal) async {
+    final data = await ApiClient.post(_caminho, corpo: _paraJson(animal));
+
+    return jsonInt((data as Map)['id']);
+  }
+
+  /// Animais de todas as propriedades do usuário.
+  Future<List<Animal>> listar() async {
+    final data = await ApiClient.get(_caminho);
+
+    return jsonLista(data).map(_doJson).toList();
+  }
+
+  /// Animais da propriedade (mais recentes primeiro).
+  Future<List<Animal>> listarPorPropriedadeId(int propriedadeId) async {
+    final data = await ApiClient.get('$_caminho/propriedade/$propriedadeId');
+
+    return jsonLista(data).map(_doJson).toList();
   }
 
   Future<int> atualizar(Animal animal) async {
-    final db = await DatabaseHelper.database;
+    await ApiClient.put('$_caminho/${animal.id}', corpo: _paraJson(animal));
 
-    return await db.update(
-      'rebanho',
-      animal.toMap(),
-      where: 'id = ? AND propriedade_id = ?',
-      whereArgs: [animal.id, animal.propriedadeId],
-    );
+    return 1;
   }
 
+  /// Exclui o animal e seus registros (pesagens, vacinações, etc.).
   Future<int> excluir(int id) async {
-    final db = await DatabaseHelper.database;
+    await ApiClient.delete('$_caminho/$id');
 
-    return await db.delete('rebanho', where: 'id = ?', whereArgs: [id]);
+    return 1;
   }
 }

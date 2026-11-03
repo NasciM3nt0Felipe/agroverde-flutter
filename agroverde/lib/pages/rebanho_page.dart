@@ -34,6 +34,9 @@ class _RebanhoPageState extends State<RebanhoPage> {
   String? _loteSelecionado;
   int? _idEditando;
 
+  // Evita cadastros duplicados com cliques repetidos.
+  bool _salvando = false;
+
   final List<String> _especies = const [
     'Bovino',
     'Equino',
@@ -71,11 +74,18 @@ class _RebanhoPageState extends State<RebanhoPage> {
       return;
     }
 
-    final dados = await _repository.listarPorPropriedadeId(propriedadeId);
+    try {
+      final dados = await _repository.listarPorPropriedadeId(propriedadeId);
 
-    setState(() {
-      _animais = dados;
-    });
+      if (!mounted) return;
+
+      setState(() {
+        _animais = dados;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      _mostrarMensagem(e.toString().replaceAll('Exception: ', ''));
+    }
   }
 
   Future<void> _selecionarDataNascimento() async {
@@ -130,14 +140,31 @@ class _RebanhoPageState extends State<RebanhoPage> {
       observacao: _observacaoController.text.trim(),
     );
 
-    if (_idEditando == null) {
-      await _repository.inserir(animal);
-      _mostrarMensagem('Animal cadastrado com sucesso. Código: $identificacao');
-    } else {
-      await _repository.atualizar(animal);
-      _mostrarMensagem('Animal atualizado com sucesso.');
+    if (_salvando) return;
+
+    setState(() => _salvando = true);
+
+    try {
+      if (_idEditando == null) {
+        await _repository.inserir(animal);
+        _mostrarMensagem(
+          'Animal cadastrado com sucesso. Código: $identificacao',
+        );
+      } else {
+        await _repository.atualizar(animal);
+        _mostrarMensagem('Animal atualizado com sucesso.');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _salvando = false);
+        _mostrarMensagem(e.toString().replaceAll('Exception: ', ''));
+      }
+      return;
     }
 
+    if (!mounted) return;
+
+    setState(() => _salvando = false);
     _limparCampos();
     await _carregarAnimais();
   }
@@ -190,8 +217,17 @@ class _RebanhoPageState extends State<RebanhoPage> {
       return;
     }
 
-    await _repository.excluir(id);
+    try {
+      await _repository.excluir(id);
+    } catch (e) {
+      if (!mounted) return;
+      _mostrarMensagem(e.toString().replaceAll('Exception: ', ''));
+      return;
+    }
+
     await _carregarAnimais();
+
+    if (!mounted) return;
     _mostrarMensagem('Animal excluído com sucesso.');
   }
 
@@ -947,7 +983,7 @@ class _RebanhoPageState extends State<RebanhoPage> {
                               style: ElevatedButton.styleFrom(
                                 minimumSize: const Size(0, 48),
                               ),
-                              onPressed: propriedadeSelecionada
+                              onPressed: propriedadeSelecionada && !_salvando
                                   ? _salvarAnimal
                                   : null,
                               icon: Icon(

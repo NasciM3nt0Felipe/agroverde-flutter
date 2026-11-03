@@ -54,17 +54,29 @@ class _PlantioPageState extends State<PlantioPage> {
       return;
     }
 
-    final itens = await _estoqueService.listarPorPropriedadeId(propriedadeId);
+    try {
+      final itens = await _estoqueService.listarPorPropriedadeId(propriedadeId);
 
-    final sementes = itens.where((item) {
-      return item.categoria.trim().toLowerCase() == 'sementes' &&
-          item.quantidadeAtual > 0;
-    }).toList();
+      final sementes = itens.where((item) {
+        return item.categoria.trim().toLowerCase() == 'sementes' &&
+            item.quantidadeAtual > 0;
+      }).toList();
 
-    setState(() {
-      _sementes = sementes;
-      _carregando = false;
-    });
+      if (!mounted) return;
+
+      setState(() {
+        _sementes = sementes;
+        _carregando = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _sementes = [];
+        _carregando = false;
+        _erroPlantio = e.toString().replaceAll('Exception: ', '');
+      });
+    }
   }
 
   Future<void> _registrarPlantio() async {

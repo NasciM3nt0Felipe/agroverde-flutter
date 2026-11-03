@@ -12,6 +12,20 @@ class VeiculoService {
 
   /// Salva ou atualiza um veículo.
   Future<int> salvar(Veiculo veiculo) async {
+    if (veiculo.nome.trim().isEmpty) {
+      throw Exception('Informe o nome do veículo.');
+    }
+
+    final anoLimite = DateTime.now().year + 1;
+
+    if (veiculo.ano != 0 && (veiculo.ano < 1950 || veiculo.ano > anoLimite)) {
+      throw Exception('Ano inválido. Informe um ano entre 1950 e $anoLimite.');
+    }
+
+    if (veiculo.horimetroOdometroAtual < 0) {
+      throw Exception('O horímetro/odômetro não pode ser negativo.');
+    }
+
     if (veiculo.id == null) {
       return await _repository.inserir(veiculo);
     }
@@ -49,43 +63,23 @@ class VeiculoService {
     return await _repository.totalVeiculos(propriedadeId);
   }
 
-  /// Registra abastecimentos no financeiro.
+  /// Mantido por compatibilidade: a despesa do abastecimento agora é
+  /// criada pela API junto com o abastecimento (evita lançamento duplicado).
   Future<void> registrarAbastecimentoFinanceiro({
     required int propriedadeId,
     required String nomeVeiculo,
     required double valor,
     required String data,
-  }) async {
-    final lancamento = LancamentoFinanceiro(
-      propriedadeId: propriedadeId,
-      descricao: 'Abastecimento - $nomeVeiculo',
-      valor: valor,
-      tipo: 'despesa',
-      data: data,
-      origemTipo: OrigemLancamento.abastecimento,
-    );
+  }) async {}
 
-    await _financeiroRepository.inserir(lancamento);
-  }
-
-  /// Registra manutenções no financeiro.
+  /// Mantido por compatibilidade: a despesa da manutenção agora é criada
+  /// pela API junto com a manutenção (evita lançamento duplicado).
   Future<void> registrarManutencaoFinanceira({
     required int propriedadeId,
     required String nomeVeiculo,
     required double valor,
     required String data,
-  }) async {
-    final lancamento = LancamentoFinanceiro(
-      propriedadeId: propriedadeId,
-      descricao: 'Manutenção - $nomeVeiculo',
-      valor: valor,
-      tipo: 'despesa',
-      data: data,
-      origemTipo: OrigemLancamento.manutencaoVeiculo,
-    );
-
-    await _financeiroRepository.inserir(lancamento);
-  }
+  }) async {}
 
   /// Registra a venda do veículo no financeiro.
   Future<void> registrarVendaFinanceira({

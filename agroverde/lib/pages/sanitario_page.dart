@@ -4,6 +4,7 @@ import '../data/sqlite/rebanho_repository.dart';
 import '../data/sqlite/sanitario_repository.dart';
 import '../domain/entities/animal.dart';
 import '../domain/entities/sanitario_rebanho.dart';
+import '../domain/services/sessao_service.dart';
 import '../theme/app_theme.dart';
 
 class SanitarioPage extends StatefulWidget {
@@ -36,8 +37,31 @@ class _SanitarioPageState extends State<SanitarioPage> {
   }
 
   Future<void> _carregarDados() async {
-    final animais = await _rebanhoRepository.listar();
-    final registros = await _sanitarioRepository.listar();
+    final propriedadeId = SessaoService.propriedadeId;
+
+    if (propriedadeId == null) {
+      setState(() {
+        _animais = [];
+        _registros = [];
+      });
+      return;
+    }
+
+    final List<Animal> animais;
+    final List<SanitarioRebanho> registros;
+
+    try {
+      animais = await _rebanhoRepository.listarPorPropriedadeId(propriedadeId);
+      registros = await _sanitarioRepository.listarPorPropriedadeId(
+        propriedadeId,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      _mostrarMensagem(e.toString().replaceAll('Exception: ', ''));
+      return;
+    }
+
+    if (!mounted) return;
 
     setState(() {
       _animais = animais;
@@ -71,7 +95,15 @@ class _SanitarioPageState extends State<SanitarioPage> {
       observacao: _observacaoController.text.trim(),
     );
 
-    await _sanitarioRepository.inserir(registro);
+    try {
+      await _sanitarioRepository.inserir(registro);
+    } catch (e) {
+      if (!mounted) return;
+      _mostrarMensagem(e.toString().replaceAll('Exception: ', ''));
+      return;
+    }
+
+    if (!mounted) return;
 
     _procedimentoController.clear();
     _dataController.clear();
@@ -90,8 +122,17 @@ class _SanitarioPageState extends State<SanitarioPage> {
   }
 
   Future<void> _excluirRegistro(int id) async {
-    await _sanitarioRepository.excluir(id);
+    try {
+      await _sanitarioRepository.excluir(id);
+    } catch (e) {
+      if (!mounted) return;
+      _mostrarMensagem(e.toString().replaceAll('Exception: ', ''));
+      return;
+    }
+
     await _carregarDados();
+
+    if (!mounted) return;
     _mostrarMensagem('Registro sanitário excluído.');
   }
 

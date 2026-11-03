@@ -140,6 +140,18 @@ class ColheitaService {
       throw Exception('Armazenamento não encontrado.');
     }
 
+    if (armazenamento.propriedadeId != propriedadeId) {
+      throw Exception('Armazenamento não encontrado.');
+    }
+
+    // A baixa é feita na unidade do armazenamento (sem conversão).
+    if (unidade != armazenamento.unidade) {
+      throw Exception(
+        'A venda deve usar a mesma unidade do armazenamento '
+        '(${armazenamento.unidade}).',
+      );
+    }
+
     if (quantidadeVendida > armazenamento.quantidadeDisponivel) {
       throw Exception('Quantidade vendida maior que a disponível.');
     }
@@ -173,7 +185,8 @@ class ColheitaService {
     );
 
     try {
-      await _vendaRepository.inserir(venda);
+      // Venda e baixa do saldo na mesma transação local.
+      await _vendaRepository.registrarVendaComBaixa(venda);
     } catch (e) {
       // A venda não foi gravada: desfaz a receita para não ficar órfã.
       try {
@@ -188,22 +201,6 @@ class ColheitaService {
 
       rethrow;
     }
-
-    final novaQuantidade =
-        armazenamento.quantidadeDisponivel - quantidadeVendida;
-
-    final armazenamentoAtualizado = ArmazenamentoGrao(
-      id: armazenamento.id,
-      colheitaId: armazenamento.colheitaId,
-      propriedadeId: armazenamento.propriedadeId,
-      produto: armazenamento.produto,
-      quantidadeTotal: armazenamento.quantidadeTotal,
-      quantidadeDisponivel: novaQuantidade,
-      unidade: armazenamento.unidade,
-      status: novaQuantidade <= 0 ? 'Vendido' : 'Disponível',
-    );
-
-    await _armazenamentoRepository.atualizar(armazenamentoAtualizado);
   }
 
   /// Lista as colheitas da propriedade.

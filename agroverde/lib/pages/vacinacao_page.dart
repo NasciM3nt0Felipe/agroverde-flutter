@@ -36,6 +36,9 @@ class _VacinacaoPageState extends State<VacinacaoPage> {
   int? _animalSelecionadoId;
   EstoqueItem? _vacinaSelecionada;
 
+  // Evita dois registros (e duas baixas) com cliques repetidos.
+  bool _salvando = false;
+
   @override
   void initState() {
     super.initState();
@@ -62,14 +65,24 @@ class _VacinacaoPageState extends State<VacinacaoPage> {
       return;
     }
 
-    final animais = await _rebanhoRepository.listarPorPropriedadeId(
-      propriedadeId,
-    );
+    final List<Animal> animais;
+    final List<EstoqueItem> vacinas;
+    final List<VacinacaoRebanho> vacinacoes;
 
-    final vacinas = await _estoqueRepository
-        .listarVacinasDisponiveisPorPropriedade(propriedadeId);
+    try {
+      animais = await _rebanhoRepository.listarPorPropriedadeId(propriedadeId);
+      vacinas = await _estoqueRepository
+          .listarVacinasDisponiveisPorPropriedade(propriedadeId);
+      vacinacoes = await _vacinacaoRepository.listarPorPropriedadeId(
+        propriedadeId,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      _mostrarMensagem(e.toString().replaceAll('Exception: ', ''));
+      return;
+    }
 
-    final vacinacoes = await _vacinacaoRepository.listar();
+    if (!mounted) return;
 
     setState(() {
       _animais = animais;
@@ -117,6 +130,8 @@ class _VacinacaoPageState extends State<VacinacaoPage> {
       return;
     }
 
+    if (_salvando) return;
+
     final vacinacao = VacinacaoRebanho(
       animalId: _animalSelecionadoId!,
       vacina: _vacinaSelecionada!.nome,
@@ -125,11 +140,16 @@ class _VacinacaoPageState extends State<VacinacaoPage> {
       observacao: _observacaoController.text.trim(),
     );
 
+    setState(() => _salvando = true);
+
     try {
       await _vacinacaoService.registrarVacinacao(
         propriedadeId: propriedadeId,
         vacinacao: vacinacao,
+        estoqueItemId: _vacinaSelecionada!.id,
       );
+
+      if (!mounted) return;
 
       setState(() {
         if (widget.animal == null) {
@@ -144,15 +164,29 @@ class _VacinacaoPageState extends State<VacinacaoPage> {
 
       await _carregarDados();
 
+      if (!mounted) return;
+
       _mostrarMensagem('Vacinação registrada com sucesso.');
     } catch (e) {
+      if (!mounted) return;
       _mostrarMensagem(e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _salvando = false);
     }
   }
 
   Future<void> _excluirVacinacao(int id) async {
-    await _vacinacaoRepository.excluir(id);
+    try {
+      await _vacinacaoRepository.excluir(id);
+    } catch (e) {
+      if (!mounted) return;
+      _mostrarMensagem(e.toString().replaceAll('Exception: ', ''));
+      return;
+    }
+
     await _carregarDados();
+
+    if (!mounted) return;
     _mostrarMensagem('Registro de vacinação excluído.');
   }
 
@@ -358,7 +392,7 @@ class _VacinacaoPageState extends State<VacinacaoPage> {
                           style: ElevatedButton.styleFrom(
                             minimumSize: const Size(0, 48),
                           ),
-                          onPressed: propriedadeSelecionada
+                          onPressed: propriedadeSelecionada && !_salvando
                               ? _salvarVacinacao
                               : null,
                           icon: const Icon(Icons.save),

@@ -1,99 +1,83 @@
 import '../../domain/entities/manutencao_veiculo.dart';
-import 'database_helper.dart';
+import '../api/api_client.dart';
+import '../api/api_datas.dart';
+import '../api/api_exception.dart';
+import '../api/api_json.dart';
 
-/// Responsável pelas operações de manutenção de veículos.
+/// Manutenções dos veículos — via API (/api/Veiculo/...).
+///
+/// A API grava a manutenção e a despesa no Financeiro na mesma
+/// transação; alterar ou excluir a manutenção ajusta a despesa.
 class ManutencaoVeiculoRepository {
-  /// Insere uma nova manutenção.
+  static const String _caminho = '/api/Veiculo';
+
+  static ManutencaoVeiculo _doJson(Map<String, dynamic> json) {
+    return ManutencaoVeiculo(
+      id: jsonIntOuNulo(json['id']),
+      veiculoId: jsonInt(json['veiculoId']),
+      data: (json['data'] ?? '') as String,
+      tipo: (json['tipo'] ?? '') as String,
+      descricao: (json['descricao'] ?? '') as String,
+      valor: jsonDouble(json['valor']),
+      observacao: (json['observacao'] ?? '') as String,
+    );
+  }
+
+  static Map<String, dynamic> _paraJson(ManutencaoVeiculo item) {
+    return {
+      'veiculoId': item.veiculoId,
+      'data': dataParaApi(item.data, campo: 'data da manutenção'),
+      'tipo': item.tipo.trim(),
+      'descricao': textoOuNulo(item.descricao),
+      'valor': item.valor,
+      'observacao': textoOuNulo(item.observacao),
+    };
+  }
+
   Future<int> inserir(ManutencaoVeiculo manutencao) async {
-    final db = await DatabaseHelper.database;
+    final data = await ApiClient.post(
+      '$_caminho/manutencoes',
+      corpo: _paraJson(manutencao),
+    );
 
-    return await db.insert('manutencao_veiculo', manutencao.toMap());
+    return jsonInt((data as Map)['id']);
   }
 
-  /// Atualiza os dados da manutenção.
   Future<int> atualizar(ManutencaoVeiculo manutencao) async {
-    final db = await DatabaseHelper.database;
-
-    return await db.update(
-      'manutencao_veiculo',
-      manutencao.toMap(),
-      where: 'id = ?',
-      whereArgs: [manutencao.id],
+    await ApiClient.put(
+      '$_caminho/manutencoes/${manutencao.id}',
+      corpo: _paraJson(manutencao),
     );
+
+    return 1;
   }
 
-  /// Remove uma manutenção.
+  /// Exclui a manutenção e a despesa gerada por ela.
   Future<int> excluir(int id) async {
-    final db = await DatabaseHelper.database;
+    await ApiClient.delete('$_caminho/manutencoes/$id');
 
-    return await db.delete(
-      'manutencao_veiculo',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    return 1;
   }
 
-  /// Busca uma manutenção pelo ID.
   Future<ManutencaoVeiculo?> buscarPorId(int id) async {
-    final db = await DatabaseHelper.database;
-
-    final resultado = await db.query(
-      'manutencao_veiculo',
-      where: 'id = ?',
-      whereArgs: [id],
-      limit: 1,
-    );
-
-    if (resultado.isEmpty) {
-      return null;
-    }
-
-    return ManutencaoVeiculo.fromMap(resultado.first);
+    // A API não expõe a busca individual; não há uso dessa busca nas telas.
+    throw ApiException('Busca de manutenção por ID não disponível.');
   }
 
-  /// Lista as manutenções do veículo.
+  /// Manutenções do veículo (mais recentes primeiro).
   Future<List<ManutencaoVeiculo>> listarPorVeiculoId(int veiculoId) async {
-    final db = await DatabaseHelper.database;
+    final data = await ApiClient.get('$_caminho/$veiculoId/manutencoes');
 
-    final resultado = await db.query(
-      'manutencao_veiculo',
-      where: 'veiculo_id = ?',
-      whereArgs: [veiculoId],
-      orderBy: 'data DESC',
-    );
-
-    return resultado.map((e) => ManutencaoVeiculo.fromMap(e)).toList();
+    return jsonLista(data).map(_doJson).toList();
   }
 
-  /// Calcula o total gasto com manutenção.
   Future<double> totalGastoVeiculo(int veiculoId) async {
-    final db = await DatabaseHelper.database;
+    final lista = await listarPorVeiculoId(veiculoId);
 
-    final resultado = await db.rawQuery(
-      '''
-      SELECT SUM(valor) as total
-      FROM manutencao_veiculo
-      WHERE veiculo_id = ?
-    ''',
-      [veiculoId],
-    );
-
-    return (resultado.first['total'] as num?)?.toDouble() ?? 0;
+    return lista.fold<double>(0, (total, m) => total + m.valor);
   }
 
-  /// Retorna a quantidade de manutenções registradas.
   Future<int> quantidadeManutencoes(int veiculoId) async {
-    final db = await DatabaseHelper.database;
-
-    final resultado = await db.rawQuery(
-      '''
-      SELECT COUNT(*) as total
-      FROM manutencao_veiculo
-      WHERE veiculo_id = ?
-    ''',
-      [veiculoId],
-    );
-
-    return resultado.first['total'] as int? ?? 0;
+    return (await listarPorVeiculoId(veiculoId)).length;
   }
 }

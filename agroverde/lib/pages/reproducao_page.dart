@@ -4,6 +4,7 @@ import '../data/sqlite/rebanho_repository.dart';
 import '../data/sqlite/reproducao_repository.dart';
 import '../domain/entities/animal.dart';
 import '../domain/entities/reproducao_rebanho.dart';
+import '../domain/services/sessao_service.dart';
 import '../theme/app_theme.dart';
 
 class ReproducaoPage extends StatefulWidget {
@@ -36,8 +37,29 @@ class _ReproducaoPageState extends State<ReproducaoPage> {
   }
 
   Future<void> _carregarDados() async {
-    final animais = await _rebanhoRepository.listar();
-    final registros = await _repository.listar();
+    final propriedadeId = SessaoService.propriedadeId;
+
+    if (propriedadeId == null) {
+      setState(() {
+        _animais = [];
+        _registros = [];
+      });
+      return;
+    }
+
+    final List<Animal> animais;
+    final List<ReproducaoRebanho> registros;
+
+    try {
+      animais = await _rebanhoRepository.listarPorPropriedadeId(propriedadeId);
+      registros = await _repository.listarPorPropriedadeId(propriedadeId);
+    } catch (e) {
+      if (!mounted) return;
+      _mostrarMensagem(e.toString().replaceAll('Exception: ', ''));
+      return;
+    }
+
+    if (!mounted) return;
 
     setState(() {
       _animais = animais;
@@ -67,7 +89,15 @@ class _ReproducaoPageState extends State<ReproducaoPage> {
       observacao: _observacaoController.text.trim(),
     );
 
-    await _repository.inserir(registro);
+    try {
+      await _repository.inserir(registro);
+    } catch (e) {
+      if (!mounted) return;
+      _mostrarMensagem(e.toString().replaceAll('Exception: ', ''));
+      return;
+    }
+
+    if (!mounted) return;
 
     _dataController.clear();
     _observacaoController.clear();
@@ -81,7 +111,14 @@ class _ReproducaoPageState extends State<ReproducaoPage> {
   }
 
   Future<void> _excluir(int id) async {
-    await _repository.excluir(id);
+    try {
+      await _repository.excluir(id);
+    } catch (e) {
+      if (!mounted) return;
+      _mostrarMensagem(e.toString().replaceAll('Exception: ', ''));
+      return;
+    }
+
     await _carregarDados();
   }
 

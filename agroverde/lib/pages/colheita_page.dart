@@ -38,6 +38,9 @@ class _ColheitaPageState extends State<ColheitaPage> {
   List<VendaGrao> _vendas = [];
 
   bool _carregando = false;
+
+  // Verdadeiro enquanto uma venda está sendo gravada.
+  bool _vendendo = false;
   String? _erroColheita;
 
   double get totalArmazenado {
@@ -265,8 +268,11 @@ class _ColheitaPageState extends State<ColheitaPage> {
                 minimumSize: const Size(0, 44),
               ),
               onPressed: () async {
-                await _registrarVenda(armazenamento);
-                if (mounted) Navigator.pop(context);
+                // Evita duas vendas (e duas receitas) com cliques repetidos.
+                if (_vendendo) return;
+
+                final registrada = await _registrarVenda(armazenamento);
+                if (registrada && context.mounted) Navigator.pop(context);
               },
               icon: const Icon(Icons.shopping_cart),
               label: const Text('Vender'),
@@ -278,10 +284,10 @@ class _ColheitaPageState extends State<ColheitaPage> {
   }
 
   /// Registra a venda e atualiza o estoque disponível.
-  Future<void> _registrarVenda(ArmazenamentoGrao armazenamento) async {
+  Future<bool> _registrarVenda(ArmazenamentoGrao armazenamento) async {
     final propriedadeId = SessaoService.propriedadeId;
 
-    if (propriedadeId == null) return;
+    if (propriedadeId == null) return false;
 
     final quantidadeTexto = _quantidadeVendaController.text.trim().replaceAll(
       ',',
@@ -298,13 +304,15 @@ class _ColheitaPageState extends State<ColheitaPage> {
 
     if (quantidade == null || quantidade <= 0) {
       _mostrarMensagem('Informe uma quantidade válida.');
-      return;
+      return false;
     }
 
     if (valorUnitario == null || valorUnitario <= 0) {
       _mostrarMensagem('Informe um valor unitário válido.');
-      return;
+      return false;
     }
+
+    _vendendo = true;
 
     try {
       await _service.registrarVenda(
@@ -320,8 +328,14 @@ class _ColheitaPageState extends State<ColheitaPage> {
 
       await _carregarDados();
       _mostrarMensagem('Venda registrada com sucesso!');
+      return true;
     } catch (e) {
-      _mostrarMensagem('Erro ao registrar venda: $e');
+      _mostrarMensagem(
+        'Erro ao registrar venda: ${e.toString().replaceAll('Exception: ', '')}',
+      );
+      return false;
+    } finally {
+      _vendendo = false;
     }
   }
 

@@ -87,11 +87,21 @@ class _EstoquePageState extends State<EstoquePage> {
       return;
     }
 
-    final lista = await _estoqueService.listarPorPropriedadeId(propriedadeId);
+    try {
+      final lista = await _estoqueService.listarPorPropriedadeId(propriedadeId);
 
-    setState(() {
-      _itens = lista;
-    });
+      if (!mounted) return;
+
+      setState(() {
+        _itens = lista;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+      );
+    }
   }
 
   /// Aplica os filtros de categoria e pesquisa.
@@ -189,7 +199,17 @@ class _EstoquePageState extends State<EstoquePage> {
   }
 
   Future<void> _excluirItem(EstoqueItem item) async {
-    await _estoqueService.excluir(item.id!);
+    try {
+      await _estoqueService.excluir(item.id!);
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+      );
+      return;
+    }
+
     await _carregarEstoque();
 
     if (!mounted) return;

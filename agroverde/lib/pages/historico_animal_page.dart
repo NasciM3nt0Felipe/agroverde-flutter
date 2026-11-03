@@ -55,10 +55,30 @@ class _HistoricoAnimalPageState extends State<HistoricoAnimalPage> {
       return;
     }
 
-    final pesagens = await _pesagemRepository.listarPorAnimal(animalId);
-    final vacinacoes = await _vacinacaoRepository.listarPorAnimal(animalId);
-    final sanitarios = await _sanitarioRepository.listarPorAnimal(animalId);
-    final reproducoes = await _reproducaoRepository.listarPorAnimal(animalId);
+    final List<PesagemRebanho> pesagens;
+    final List<VacinacaoRebanho> vacinacoes;
+    final List<SanitarioRebanho> sanitarios;
+    final List<ReproducaoRebanho> reproducoes;
+
+    try {
+      pesagens = await _pesagemRepository.listarPorAnimal(animalId);
+      vacinacoes = await _vacinacaoRepository.listarPorAnimal(animalId);
+      sanitarios = await _sanitarioRepository.listarPorAnimal(animalId);
+      reproducoes = await _reproducaoRepository.listarPorAnimal(animalId);
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _carregando = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+      );
+      return;
+    }
+
+    if (!mounted) return;
 
     setState(() {
       _pesagens = pesagens;

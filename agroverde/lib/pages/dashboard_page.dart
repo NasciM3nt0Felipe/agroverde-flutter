@@ -6,6 +6,9 @@ import '../data/sqlite/talhao_repository.dart';
 import '../data/sqlite/safra_repository.dart';
 import '../data/sqlite/rebanho_repository.dart';
 import '../data/sqlite/financeiro_repository.dart';
+import '../data/sqlite/estoque_repository.dart';
+import '../data/sqlite/veiculo_repository.dart';
+import '../domain/entities/estoque_item.dart';
 import '../domain/entities/lancamento_financeiro.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -20,6 +23,17 @@ class _DashboardPageState extends State<DashboardPage> {
   final SafraRepository _safraRepository = SafraRepository();
   final RebanhoRepository _rebanhoRepository = RebanhoRepository();
   final FinanceiroRepository _financeiroRepository = FinanceiroRepository();
+  final VeiculoRepository _veiculoRepository = VeiculoRepository();
+  final EstoqueRepository _estoqueRepository = EstoqueRepository();
+
+  // Veículos (API): status "Ativo" e "Manutenção" da tela de Veículos.
+  int _veiculosAtivos = 0;
+  int _veiculosManutencao = 0;
+  bool _veiculosIndisponiveis = false;
+
+  // Alertas de estoque (API): itens zerados primeiro, depois os baixos.
+  List<EstoqueItem> _alertasEstoque = [];
+  bool _estoqueIndisponivel = false;
 
   int _totalTalhoes = 0;
   int _totalSafras = 0;
@@ -74,6 +88,11 @@ class _DashboardPageState extends State<DashboardPage> {
         _saldo = 0;
         _erroFinanceiro = null;
         _talhoesIndisponiveis = false;
+        _veiculosAtivos = 0;
+        _veiculosManutencao = 0;
+        _veiculosIndisponiveis = false;
+        _alertasEstoque = [];
+        _estoqueIndisponivel = false;
         _carregando = false;
       });
       return;
@@ -106,9 +125,56 @@ class _DashboardPageState extends State<DashboardPage> {
       talhoesIndisponiveis = true;
     }
 
-    final animais = await _rebanhoRepository.listarPorPropriedadeId(
-      propriedadeId,
-    );
+    // O rebanho vem da API: uma falha não deve travar o Dashboard.
+    int totalAnimais = 0;
+
+    try {
+      totalAnimais = (await _rebanhoRepository.listarPorPropriedadeId(
+        propriedadeId,
+      )).length;
+    } catch (_) {
+      totalAnimais = 0;
+    }
+
+    // Veículos e estoque vêm da API: uma falha não deve travar o Dashboard.
+    int veiculosAtivos = 0;
+    int veiculosManutencao = 0;
+    bool veiculosIndisponiveis = false;
+
+    try {
+      final veiculos = await _veiculoRepository.listarPorPropriedadeId(
+        propriedadeId,
+      );
+
+      veiculosAtivos = veiculos.where((v) => v.status == 'Ativo').length;
+      veiculosManutencao = veiculos
+          .where((v) => v.status == 'Manutenção')
+          .length;
+    } catch (_) {
+      veiculosIndisponiveis = true;
+    }
+
+    var alertasEstoque = <EstoqueItem>[];
+    bool estoqueIndisponivel = false;
+
+    try {
+      final itens = await _estoqueRepository.listarPorPropriedadeId(
+        propriedadeId,
+      );
+
+      // Mesmas regras de status da tela de Estoque.
+      alertasEstoque =
+          itens.where((i) => i.estoqueZerado || i.estoqueBaixo).toList()
+            ..sort((a, b) {
+              if (a.estoqueZerado != b.estoqueZerado) {
+                return a.estoqueZerado ? -1 : 1;
+              }
+
+              return a.nome.toLowerCase().compareTo(b.nome.toLowerCase());
+            });
+    } catch (_) {
+      estoqueIndisponivel = true;
+    }
 
     double receitas = 0;
     double despesas = 0;
@@ -143,7 +209,12 @@ class _DashboardPageState extends State<DashboardPage> {
       _totalTalhoes = totalTalhoes;
       _totalSafras = totalSafras;
       _talhoesIndisponiveis = talhoesIndisponiveis;
-      _totalAnimais = animais.length;
+      _totalAnimais = totalAnimais;
+      _veiculosAtivos = veiculosAtivos;
+      _veiculosManutencao = veiculosManutencao;
+      _veiculosIndisponiveis = veiculosIndisponiveis;
+      _alertasEstoque = alertasEstoque;
+      _estoqueIndisponivel = estoqueIndisponivel;
       _receitas = receitas;
       _despesas = despesas;
       _saldo = receitas - despesas;
@@ -207,7 +278,9 @@ class _DashboardPageState extends State<DashboardPage> {
           color: Colors.white.withOpacity(0.88),
           child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1200),
+              // Largura de 3 cards por linha: o conteúdo fica centralizado
+              // e os cards alinhados entre as seções.
+              constraints: const BoxConstraints(maxWidth: 740),
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
                 child: Column(
@@ -258,45 +331,21 @@ class _DashboardPageState extends State<DashboardPage> {
                       ),
                     ),
                     const SizedBox(height: 24),
+                    const _TituloSecao(
+                      titulo: 'Financeiro',
+                      icone: Icons.account_balance_wallet,
+                    ),
+                    const SizedBox(height: 12),
                     Wrap(
                       spacing: 16,
                       runSpacing: 16,
                       children: [
                         _DashboardCard(
-                          titulo: 'Talhões',
-                          valor: _talhoesIndisponiveis
-                              ? 'Indisponível'
-                              : _totalTalhoes.toString(),
-                          icone: Icons.agriculture,
-                        ),
-                        _DashboardCard(
-                          titulo: 'Safras',
-                          valor: _talhoesIndisponiveis
-                              ? 'Indisponível'
-                              : _totalSafras.toString(),
-                          icone: Icons.grass,
-                        ),
-                        _DashboardCard(
-                          titulo: 'Animais',
-                          valor: _totalAnimais.toString(),
-                          icone: Icons.pets,
-                        ),
-                        _DashboardCard(
-                          titulo: 'Saldo',
-                          valor: _valorFinanceiro(_saldo),
-                          icone: _financeiroIndisponivel
-                              ? Icons.cloud_off
-                              : Icons.account_balance_wallet,
-                          corIcone: _corFinanceira(
-                            _saldo < 0
-                                ? Colors.red
-                                : const Color(0xFF064E2F),
-                          ),
-                          corValor: _corFinanceira(
-                            _saldo < 0
-                                ? Colors.red
-                                : const Color(0xFF064E2F),
-                          ),
+                          titulo: 'Despesas',
+                          valor: _valorFinanceiro(_despesas),
+                          icone: Icons.trending_down,
+                          corIcone: _corFinanceira(Colors.red),
+                          corValor: _corFinanceira(Colors.red),
                         ),
                         _DashboardCard(
                           titulo: 'Receitas',
@@ -305,14 +354,22 @@ class _DashboardPageState extends State<DashboardPage> {
                           corIcone: _corFinanceira(Colors.green),
                           corValor: _corFinanceira(Colors.green),
                         ),
-                        _DashboardCard(
-                          titulo: 'Despesas',
-                          valor: _valorFinanceiro(_despesas),
-                          icone: Icons.trending_down,
-                          corIcone: _corFinanceira(Colors.red),
-                          corValor: _corFinanceira(Colors.red),
-                        ),
                       ],
+                    ),
+                    const SizedBox(height: 16),
+                    _DashboardCard(
+                      titulo: 'Saldo',
+                      valor: _valorFinanceiro(_saldo),
+                      icone: _financeiroIndisponivel
+                          ? Icons.cloud_off
+                          : Icons.account_balance_wallet,
+                      corIcone: _corFinanceira(
+                        _saldo < 0 ? Colors.red : const Color(0xFF064E2F),
+                      ),
+                      corValor: _corFinanceira(
+                        _saldo < 0 ? Colors.red : const Color(0xFF064E2F),
+                      ),
+                      largura: 456,
                     ),
                     if (_financeiroIndisponivel) ...[
                       const SizedBox(height: 12),
@@ -346,6 +403,69 @@ class _DashboardPageState extends State<DashboardPage> {
                         ),
                       ),
                     ],
+                    const SizedBox(height: 24),
+                    const Divider(height: 1),
+                    const SizedBox(height: 24),
+                    const _TituloSecao(
+                      titulo: 'Operacional',
+                      icone: Icons.agriculture,
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 16,
+                      runSpacing: 16,
+                      children: [
+                        _DashboardCard(
+                          titulo: 'Talhões',
+                          valor: _talhoesIndisponiveis
+                              ? 'Indisponível'
+                              : _totalTalhoes.toString(),
+                          icone: Icons.agriculture,
+                        ),
+                        _DashboardCard(
+                          titulo: 'Safras',
+                          valor: _talhoesIndisponiveis
+                              ? 'Indisponível'
+                              : _totalSafras.toString(),
+                          icone: Icons.grass,
+                        ),
+                        _DashboardCard(
+                          titulo: 'Animais',
+                          valor: _totalAnimais.toString(),
+                          icone: Icons.pets,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Wrap(
+                      spacing: 16,
+                      runSpacing: 16,
+                      children: [
+                        _AlertasEstoqueCard(
+                          alertas: _alertasEstoque,
+                          indisponivel: _estoqueIndisponivel,
+                        ),
+                        _DashboardCard(
+                          titulo: 'Veículos ativos',
+                          valor: _veiculosIndisponiveis
+                              ? 'Indisponível'
+                              : _veiculosAtivos.toString(),
+                          icone: Icons.local_shipping,
+                        ),
+                        _DashboardCard(
+                          titulo: 'Em manutenção',
+                          valor: _veiculosIndisponiveis
+                              ? 'Indisponível'
+                              : _veiculosManutencao.toString(),
+                          icone: Icons.build,
+                          corIcone: _veiculosManutencao > 0
+                              ? Colors.orange.shade800
+                              : null,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    const Divider(height: 1),
                     const SizedBox(height: 32),
                     const Text(
                       'Acesso rápido',
@@ -420,6 +540,7 @@ class _DashboardCard extends StatelessWidget {
   final IconData icone;
   final Color? corIcone;
   final Color? corValor;
+  final double largura;
 
   const _DashboardCard({
     required this.titulo,
@@ -427,12 +548,13 @@ class _DashboardCard extends StatelessWidget {
     required this.icone,
     this.corIcone,
     this.corValor,
+    this.largura = 220,
   });
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 220,
+      width: largura,
       height: 150,
       child: Card(
         elevation: 4,
@@ -451,6 +573,140 @@ class _DashboardCard extends StatelessWidget {
                 ),
               ),
               Text(titulo),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Box compacta com os itens de estoque zerados (vermelho) e baixos
+/// (amarelo), com rolagem interna.
+/// Título discreto de seção do painel.
+class _TituloSecao extends StatelessWidget {
+  final String titulo;
+  final IconData icone;
+
+  const _TituloSecao({required this.titulo, required this.icone});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icone, size: 20, color: const Color(0xFF064E2F)),
+        const SizedBox(width: 8),
+        Text(
+          titulo,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF064E2F),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AlertasEstoqueCard extends StatelessWidget {
+  final List<EstoqueItem> alertas;
+  final bool indisponivel;
+
+  const _AlertasEstoqueCard({
+    required this.alertas,
+    required this.indisponivel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    Widget conteudo;
+
+    if (indisponivel) {
+      conteudo = const Center(
+        child: Text('Indisponível', style: TextStyle(color: Colors.grey)),
+      );
+    } else if (alertas.isEmpty) {
+      conteudo = const Center(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.check_circle, color: Color(0xFF064E2F), size: 18),
+            SizedBox(width: 6),
+            Text(
+              'Estoque em dia',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+      );
+    } else {
+      conteudo = Scrollbar(
+        thumbVisibility: alertas.length > 3,
+        child: ListView.builder(
+          padding: const EdgeInsets.only(right: 8),
+          itemCount: alertas.length,
+          itemBuilder: (context, index) {
+            final item = alertas[index];
+            final zerado = item.estoqueZerado;
+            final cor = zerado ? Colors.red.shade700 : Colors.amber.shade800;
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Row(
+                children: [
+                  Icon(Icons.circle, size: 9, color: cor),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      item.nome,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    zerado ? 'Zerado' : 'Baixo',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: cor,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      );
+    }
+
+    return SizedBox(
+      width: 220,
+      height: 150,
+      child: Card(
+        elevation: 4,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    Icons.inventory_2,
+                    size: 20,
+                    color: Color(0xFF064E2F),
+                  ),
+                  const SizedBox(width: 6),
+                  const Text(
+                    'Alertas de Estoque',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Expanded(child: conteudo),
             ],
           ),
         ),

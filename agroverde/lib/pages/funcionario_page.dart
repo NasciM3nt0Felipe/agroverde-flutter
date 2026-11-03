@@ -5,7 +5,6 @@ import '../domain/entities/pessoa.dart';
 import '../domain/entities/funcionario.dart';
 import '../domain/services/funcionario_service.dart';
 import '../domain/services/sessao_service.dart';
-import '../data/sqlite/pessoa_repository.dart';
 
 class FuncionarioPage extends StatefulWidget {
   const FuncionarioPage({super.key});
@@ -15,7 +14,6 @@ class FuncionarioPage extends StatefulWidget {
 }
 
 class _FuncionarioPageState extends State<FuncionarioPage> {
-  final PessoaRepository _pessoaRepository = PessoaRepository();
   final FuncionarioService _funcionarioService = FuncionarioService();
 
   final _formKey = GlobalKey<FormState>();
@@ -66,19 +64,38 @@ class _FuncionarioPageState extends State<FuncionarioPage> {
 
     setState(() => _carregando = true);
 
-    final pessoas = await _pessoaRepository.listarOperacionais();
+    try {
+      // A API devolve cada funcionário já com os dados da pessoa (nome, CPF,
+      // telefone); a lista de pessoas usada pela tela é montada a partir deles.
+      final funcionarios = await _funcionarioService.listarPorPropriedadeId(
+        propriedadeId,
+      );
 
-    final funcionarios = await _funcionarioService.listarPorPropriedadeId(
-      propriedadeId,
-    );
+      final pessoas = funcionarios
+          .map(
+            (f) => Pessoa(
+              id: f.pessoaId,
+              usuarioId: 0,
+              nome: f.nome,
+              cpf: f.cpf,
+              telefone: f.telefone,
+            ),
+          )
+          .toList();
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    setState(() {
-      _pessoasOperacionais = pessoas;
-      _funcionarios = funcionarios;
-      _carregando = false;
-    });
+      setState(() {
+        _pessoasOperacionais = pessoas;
+        _funcionarios = funcionarios;
+        _carregando = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() => _carregando = false);
+      _mostrarMensagem(e.toString().replaceAll('Exception: ', ''));
+    }
   }
 
   /// Salva ou atualiza um funcionário.
@@ -97,54 +114,17 @@ class _FuncionarioPageState extends State<FuncionarioPage> {
     if (!_formKey.currentState!.validate()) return;
 
     try {
-      int pessoaId;
-
       final cpfDigitado = _cpfController.text.trim();
-
-      if (_funcionarioEditandoId == null) {
-        if (cpfDigitado.isNotEmpty) {
-          final pessoaExistente = await _pessoaRepository
-              .buscarPorCpfOperacional(cpfDigitado);
-
-          if (pessoaExistente != null) {
-            setState(() {
-              _erroCpf = 'CPF já cadastrado.';
-            });
-
-            _formKey.currentState!.validate();
-            return;
-          }
-        }
-
-        final pessoa = Pessoa(
-          usuarioId: 0,
-          nome: _nomeController.text.trim(),
-          cpf: cpfDigitado,
-          telefone: _telefoneController.text.trim(),
-        );
-
-        pessoaId = await _pessoaRepository.inserir(pessoa);
-      } else {
-        pessoaId = _pessoaOperacionalEditandoId!;
-
-        final pessoaAtualizada = Pessoa(
-          id: pessoaId,
-          usuarioId: 0,
-          nome: _nomeController.text.trim(),
-          cpf: cpfDigitado,
-          telefone: _telefoneController.text.trim(),
-        );
-
-        await _pessoaRepository.atualizar(pessoaAtualizada);
-      }
 
       final salario = double.tryParse(
         _salarioController.text.replaceAll('.', '').replaceAll(',', '.'),
       );
 
+      // A pessoa (nome, CPF, telefone) é gravada pela API junto com o
+      // funcionário, na mesma operação.
       final funcionario = Funcionario(
         id: _funcionarioEditandoId,
-        pessoaId: pessoaId,
+        pessoaId: _pessoaOperacionalEditandoId ?? 0,
         propriedadeId: propriedadeId,
         cargo: _cargoController.text.trim(),
         salario: salario,
@@ -154,6 +134,9 @@ class _FuncionarioPageState extends State<FuncionarioPage> {
             : _dataDesligamentoController.text.trim(),
         status: _status,
         observacao: _observacaoController.text.trim(),
+        nome: _nomeController.text.trim(),
+        cpf: cpfDigitado,
+        telefone: _telefoneController.text.trim(),
       );
 
       await _funcionarioService.salvar(funcionario);
@@ -162,7 +145,19 @@ class _FuncionarioPageState extends State<FuncionarioPage> {
       _limparFormulario();
       await _carregarDados();
     } catch (e) {
-      _mostrarMensagem(e.toString().replaceAll('Exception: ', ''));
+      final mensagem = e.toString().replaceAll('Exception: ', '');
+
+      // Erros do CPF / pessoa já cadastrada aparecem no campo CPF, como antes.
+      if (mensagem.startsWith('CPF') || mensagem.contains('já está cadastrada')) {
+        setState(() {
+          _erroCpf = mensagem;
+        });
+
+        _formKey.currentState!.validate();
+        return;
+      }
+
+      _mostrarMensagem(mensagem);
     }
   }
 
@@ -263,7 +258,16 @@ class _FuncionarioPageState extends State<FuncionarioPage> {
   Future<void> _excluir(Funcionario funcionario) async {
     if (funcionario.id == null) return;
 
-    await _funcionarioService.excluir(funcionario.id!);
+    try {
+      await _funcionarioService.excluir(funcionario.id!);
+    } catch (e) {
+      if (!mounted) return;
+
+      _mostrarMensagem(e.toString().replaceAll('Exception: ', ''));
+      return;
+    }
+
+    if (!mounted) return;
 
     _mostrarMensagem('Funcionário removido.');
     _limparFormulario();

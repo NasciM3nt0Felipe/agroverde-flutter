@@ -9,6 +9,12 @@ class Funcionario {
   String status;
   String? observacao;
 
+  // Dados da Pessoa vinculada (preenchidos pela API na listagem/consulta e
+  // enviados na gravação). Opcionais: não fazem parte do toMap/fromMap antigo.
+  String? nome;
+  String? cpf;
+  String? telefone;
+
   Funcionario({
     this.id,
     required this.pessoaId,
@@ -19,6 +25,9 @@ class Funcionario {
     this.dataDesligamento,
     required this.status,
     this.observacao,
+    this.nome,
+    this.cpf,
+    this.telefone,
   });
 
   Map<String, dynamic> toMap() {

@@ -11,21 +11,14 @@ class FuncionarioService {
   final FinanceiroRepository _financeiroRepository = FinanceiroRepository();
 
   /// Salva ou atualiza um funcionário.
+  ///
+  /// As regras (propriedade do usuário, duplicidade de pessoa/propriedade,
+  /// CPF único etc.) são aplicadas pela API; aqui ficam só as validações
+  /// rápidas, para não ir à rede com dados claramente inválidos.
   Future<int> salvar(Funcionario funcionario) async {
     _validarFuncionario(funcionario);
 
     if (funcionario.id == null) {
-      final existe = await _funcionarioRepository.existeFuncionarioParaPessoa(
-        funcionario.pessoaId,
-        funcionario.propriedadeId,
-      );
-
-      if (existe) {
-        throw Exception(
-          'Essa pessoa já está cadastrada como funcionário nesta propriedade.',
-        );
-      }
-
       return await _funcionarioRepository.inserir(funcionario);
     }
 
@@ -38,13 +31,21 @@ class FuncionarioService {
     required String dataDesligamento,
     String? observacao,
   }) async {
+    if (funcionario.id == null) {
+      throw Exception('Funcionário inválido.');
+    }
+
+    final dataBanco = _converterDataBrParaBanco(dataDesligamento);
+
+    await _funcionarioRepository.desligar(
+      id: funcionario.id!,
+      dataDesligamento: dataBanco,
+      observacao: observacao,
+    );
+
     funcionario.status = 'Desligado';
-    funcionario.dataDesligamento = _converterDataBrParaBanco(dataDesligamento);
+    funcionario.dataDesligamento = dataBanco;
     funcionario.observacao = observacao ?? funcionario.observacao;
-
-    _validarFuncionario(funcionario);
-
-    await _funcionarioRepository.atualizar(funcionario);
   }
 
   /// Lança a folha de pagamento no financeiro.
@@ -117,7 +118,9 @@ class FuncionarioService {
 
   /// Valida os dados obrigatórios do funcionário.
   void _validarFuncionario(Funcionario funcionario) {
-    if (funcionario.pessoaId <= 0) {
+    // Na criação a pessoa ainda não existe: ela é criada pela API junto com o
+    // funcionário. Só uma edição precisa de uma pessoa já vinculada.
+    if (funcionario.id != null && funcionario.pessoaId <= 0) {
       throw Exception('Pessoa inválida.');
     }
 

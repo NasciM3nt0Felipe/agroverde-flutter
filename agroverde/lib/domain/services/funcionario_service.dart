@@ -54,6 +54,12 @@ class FuncionarioService {
     required String data,
     int? safraId,
   }) async {
+    if (funcionario.status == 'Desligado') {
+      throw Exception(
+        'Não é possível lançar a folha de pagamento de um funcionário desligado.',
+      );
+    }
+
     if (funcionario.salario == null || funcionario.salario! <= 0) {
       throw Exception('O funcionário não possui salário válido.');
     }

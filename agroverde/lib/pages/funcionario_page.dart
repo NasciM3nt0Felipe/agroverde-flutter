@@ -180,50 +180,93 @@ class _FuncionarioPageState extends State<FuncionarioPage> {
 
   /// Registra a folha de pagamento no financeiro.
   Future<void> _registrarFolha(Funcionario funcionario) async {
+    if (funcionario.status == 'Desligado') {
+      _mostrarMensagem(
+        'Não é possível lançar a folha de pagamento de um funcionário desligado.',
+      );
+      return;
+    }
+
     final dataController = TextEditingController();
+
+    // Evita lançamentos repetidos enquanto a gravação está em andamento.
+    var salvando = false;
 
     await showDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Lançar folha de pagamento'),
-          content: TextFormField(
-            controller: dataController,
-            readOnly: true,
-            decoration: const InputDecoration(
-              labelText: 'Data do lançamento',
-              hintText: 'dd/mm/aaaa',
-              prefixIcon: Icon(Icons.calendar_month),
-            ),
-            onTap: () => _selecionarData(dataController),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(0, 44),
-              ),
-              onPressed: () async {
-                try {
-                  await _funcionarioService.registrarFolhaPagamento(
-                    funcionario: funcionario,
-                    data: dataController.text.trim(),
-                  );
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            Future<void> lancar() async {
+              if (salvando) return;
 
-                  if (!mounted) return;
+              setDialogState(() {
+                salvando = true;
+              });
 
-                  Navigator.pop(context);
+              try {
+                await _funcionarioService.registrarFolhaPagamento(
+                  funcionario: funcionario,
+                  data: dataController.text.trim(),
+                );
+
+                if (dialogContext.mounted) {
+                  Navigator.pop(dialogContext);
+                }
+
+                if (mounted) {
                   _mostrarMensagem('Folha lançada no financeiro.');
-                } catch (e) {
+                }
+              } catch (e) {
+                if (mounted) {
                   _mostrarMensagem(e.toString().replaceAll('Exception: ', ''));
                 }
-              },
-              child: const Text('Lançar'),
-            ),
-          ],
+
+                if (dialogContext.mounted) {
+                  setDialogState(() {
+                    salvando = false;
+                  });
+                }
+              }
+            }
+
+            return AlertDialog(
+              title: const Text('Lançar folha de pagamento'),
+              content: TextFormField(
+                controller: dataController,
+                readOnly: true,
+                enabled: !salvando,
+                decoration: const InputDecoration(
+                  labelText: 'Data do lançamento',
+                  hintText: 'dd/mm/aaaa',
+                  prefixIcon: Icon(Icons.calendar_month),
+                ),
+                onTap: () => _selecionarData(dataController),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: salvando
+                      ? null
+                      : () => Navigator.pop(dialogContext),
+                  child: const Text('Cancelar'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(0, 44),
+                  ),
+                  onPressed: salvando ? null : lancar,
+                  child: salvando
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Lançar'),
+                ),
+              ],
+            );
+          },
         );
       },
     );

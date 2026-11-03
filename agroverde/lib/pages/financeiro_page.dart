@@ -317,6 +317,12 @@ class _FinanceiroPageState extends State<FinanceiroPage> {
     return _financeiroIndisponivel ? 'Indisponível' : _formatarValor(valor);
   }
 
+  /// Cor dos indicadores (cinza quando a API está indisponível),
+  /// no mesmo padrão do Dashboard.
+  Color _corIndicador(Color cor) {
+    return _financeiroIndisponivel ? Colors.grey : cor;
+  }
+
   /// Cor e rótulo do status do lançamento.
   Color _corStatus(LancamentoFinanceiro item) {
     if (item.cancelado) return Colors.grey;
@@ -394,16 +400,24 @@ class _FinanceiroPageState extends State<FinanceiroPage> {
                       titulo: 'Receitas',
                       valor: _valorIndicador(totalReceitas),
                       icone: Icons.trending_up,
+                      corIcone: _corIndicador(Colors.green),
+                      corValor: _corIndicador(Colors.green),
                     ),
                     _IndicadorCard(
                       titulo: 'Despesas',
                       valor: _valorIndicador(totalDespesas),
                       icone: Icons.trending_down,
+                      corIcone: _corIndicador(Colors.red),
+                      corValor: _corIndicador(Colors.red),
                     ),
                     _IndicadorCard(
                       titulo: 'Saldo',
                       valor: _valorIndicador(saldo),
-                      icone: Icons.account_balance_wallet,
+                      icone: _financeiroIndisponivel
+                          ? Icons.cloud_off
+                          : Icons.account_balance_wallet,
+                      corIcone: _corIndicador(saldo < 0 ? Colors.red : _verde),
+                      corValor: _corIndicador(saldo < 0 ? Colors.red : _verde),
                     ),
                   ],
                 ),
@@ -772,11 +786,15 @@ class _IndicadorCard extends StatelessWidget {
   final String titulo;
   final String valor;
   final IconData icone;
+  final Color? corIcone;
+  final Color? corValor;
 
   const _IndicadorCard({
     required this.titulo,
     required this.valor,
     required this.icone,
+    this.corIcone,
+    this.corValor,
   });
 
   @override
@@ -790,7 +808,7 @@ class _IndicadorCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              Icon(icone, size: 36, color: const Color(0xFF064E2F)),
+              Icon(icone, size: 36, color: corIcone ?? const Color(0xFF064E2F)),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
@@ -801,9 +819,10 @@ class _IndicadorCard extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(
                       valor,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
+                        color: corValor,
                       ),
                     ),
                   ],
